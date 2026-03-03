@@ -25,6 +25,7 @@ import {
   fetchUserDirectoryMapByIds,
   getUserLabelById,
 } from "../../lib/userDirectory";
+import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
 
 function formatEUR(value) {
   const n = Number(value || 0);
@@ -41,6 +42,25 @@ function safeText(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function getAssignedDisplayLabel(asset, usersMap) {
+  const fromUser = asset?.assigned_to_user_id
+    ? getUserLabelById(usersMap, asset.assigned_to_user_id)
+    : "";
+  if (fromUser && fromUser !== asset?.assigned_to_user_id) return fromUser;
+  if (asset?.assigned_to_name) return asset.assigned_to_name;
+  if (fromUser) return fromUser;
+  return "-";
+}
+
+function getHistoryAssignmentLabel(row, userIdField, nameField, usersMap) {
+  const userId = row?.[userIdField];
+  const fromUser = userId ? getUserLabelById(usersMap, userId) : "";
+  if (fromUser && fromUser !== userId) return fromUser;
+  if (row?.[nameField]) return row[nameField];
+  if (fromUser && fromUser !== "-") return fromUser;
+  return "-";
 }
 
 export default function AssetDetailPage() {
@@ -60,7 +80,9 @@ export default function AssetDetailPage() {
   const [usersMap, setUsersMap] = useState({});
   const [userOptions, setUserOptions] = useState([]);
   const [assignToUserId, setAssignToUserId] = useState("");
+  const [assignedToName, setAssignedToName] = useState("");
   const [assignBusy, setAssignBusy] = useState(false);
+  const [userRole, setUserRole] = useState("");
   const [assignmentHistory, setAssignmentHistory] = useState([]);
 
   async function fetchAll(assetId) {
@@ -78,6 +100,7 @@ export default function AssetDetailPage() {
       { data: maintenanceData },
       { data: assignmentHistoryData },
       usersList,
+      { profile },
     ] = await Promise.all([
       supabase
         .from("incidents")
@@ -95,6 +118,7 @@ export default function AssetDetailPage() {
         .eq("asset_id", assetId)
         .order("changed_at", { ascending: false }),
       fetchUserDirectoryList(),
+      getCurrentUserProfile(),
     ]);
 
     const attachmentData = await fetchAssetAttachments(assetId);
@@ -114,6 +138,8 @@ export default function AssetDetailPage() {
     setAssignmentHistory(assignmentHistoryData || []);
     setUserOptions(usersList || []);
     setAssignToUserId(assetData?.assigned_to_user_id || "");
+    setAssignedToName(assetData?.assigned_to_name || "");
+    setUserRole(profile?.role || "");
 
     const baseMap = {};
     (usersList || []).forEach((user) => {
@@ -163,6 +189,11 @@ export default function AssetDetailPage() {
     () => groupMaintenanceByMonth(maintenance, 12),
     [maintenance]
   );
+  const canManageAssignment = hasOneRole(userRole, [
+    APP_ROLES.CEO,
+    APP_ROLES.DAF,
+    APP_ROLES.RESPONSABLE,
+  ]);
 
   const timelineItems = useMemo(() => {
     const incidentItems = incidents.map((item) => ({
@@ -249,18 +280,44 @@ export default function AssetDetailPage() {
 
   async function updateAssetAssignment() {
     if (!asset?.id) return;
+    if (!canManageAssignment) {
+      setStatusMessage("Action refusée: seul CEO/DAF/RESPONSABLE peut modifier 'Attribué à'.");
+      return;
+    }
     setAssignBusy(true);
     setStatusMessage("");
+    let successMessage = "Attribution mise à jour.";
 
-    const { error } = await supabase
+    const selectedUser = userOptions.find((user) => user.id === assignToUserId);
+    const assignedNameFromUser = selectedUser
+      ? (selectedUser.full_name || selectedUser.label || selectedUser.email || selectedUser.id || "")
+      : "";
+    const assignedName = assignedToName.trim() || assignedNameFromUser || null;
+
+    let { error } = await supabase
       .from("assets")
-      .update({ assigned_to_user_id: assignToUserId || null })
+      .update({
+        assigned_to_user_id: assignToUserId || null,
+        assigned_to_name: assignedName,
+      })
       .eq("id", asset.id);
+
+    if (error && String(error.message || "").toLowerCase().includes("assigned_to_name")) {
+      const fallback = await supabase
+        .from("assets")
+        .update({ assigned_to_user_id: assignToUserId || null })
+        .eq("id", asset.id);
+      error = fallback.error;
+      if (!fallback.error) {
+        successMessage =
+          "Attribution utilisateur mise à jour. Pour stocker le nom libre, execute la migration SQL assigned_to_name."
+      }
+    }
 
     if (error) {
       setStatusMessage(`Erreur mise à jour attribution: ${error.message}`);
     } else {
-      setStatusMessage("Attribution mise à jour.");
+      setStatusMessage(successMessage);
       await fetchAll(asset.id);
     }
 
@@ -334,7 +391,7 @@ export default function AssetDetailPage() {
   <p><strong>Code:</strong> ${safeText(asset.code || asset.serial_number)}</p>
   <p><strong>Categorie:</strong> ${safeText(asset.category)}</p>
   <p><strong>Date achat:</strong> ${safeText(asset.purchase_date)}</p>
-  <p><strong>Attribue a:</strong> ${safeText(getUserLabelById(usersMap, asset.assigned_to_user_id))}</p>
+  <p><strong>Attribue a:</strong> ${safeText(getAssignedDisplayLabel(asset, usersMap))}</p>
   <p><strong>Type amortissement:</strong> ${safeText(asset.amortissement_type)}</p>
   <p><strong>Valeur achat:</strong> ${formatEUR(analysis.purchaseValue)}</p>
   <p><strong>VNC actuelle:</strong> ${formatEUR(analysis.vnc)}</p>
@@ -412,7 +469,7 @@ export default function AssetDetailPage() {
         <p><strong>Categorie:</strong> {asset.category || "-"}</p>
         <p><strong>Date d'achat:</strong> {asset.purchase_date || "-"}</p>
         <p><strong>Statut:</strong> <StatusBadge status={asset.status} /></p>
-        <p><strong>Attribué à:</strong> {getUserLabelById(usersMap, asset.assigned_to_user_id)}</p>
+        <p><strong>Attribué à:</strong> {getAssignedDisplayLabel(asset, usersMap)}</p>
         <p><strong>Type amortissement:</strong> {asset.amortissement_type || "-"}</p>
         <p><strong>Duree:</strong> {analysis.duration || "-"} ans</p>
         <p><strong>Incidents 12 mois:</strong> {analysis.incidentCount12m}</p>
@@ -431,23 +488,42 @@ export default function AssetDetailPage() {
           </div>
         )}
 
-        <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr auto", gap: 10 }}>
-          <select
-            className="select"
-            value={assignToUserId}
-            onChange={(e) => setAssignToUserId(e.target.value)}
-          >
-            <option value="">Aucune attribution</option>
-            {userOptions.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.full_name || user.email || user.id}
-              </option>
-            ))}
-          </select>
-          <button className="btn-secondary" onClick={updateAssetAssignment} disabled={assignBusy}>
-            {assignBusy ? "Mise à jour..." : "Mettre à jour attribution"}
-          </button>
-        </div>
+        {canManageAssignment ? (
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1.2fr 1fr auto", gap: 10 }}>
+            <input
+              className="input"
+              value={assignedToName}
+              placeholder="Nom de la personne attribuée"
+              onChange={(e) => setAssignedToName(e.target.value)}
+            />
+            <select
+              className="select"
+              value={assignToUserId}
+              onChange={(e) => {
+                const nextId = e.target.value;
+                setAssignToUserId(nextId);
+                if (!nextId) return;
+                const selected = userOptions.find((user) => user.id === nextId);
+                const label = selected?.full_name || selected?.label || selected?.email || "";
+                if (label) setAssignedToName(label);
+              }}
+            >
+              <option value="">Aucun utilisateur lié</option>
+              {userOptions.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.full_name || user.email || user.id}
+                </option>
+              ))}
+            </select>
+            <button className="btn-secondary" onClick={updateAssetAssignment} disabled={assignBusy}>
+              {assignBusy ? "Mise à jour..." : "Mettre à jour attribution"}
+            </button>
+          </div>
+        ) : (
+          <div className="alert-warning" style={{ marginTop: 12 }}>
+            Modification de l'attribution réservée aux rôles CEO, DAF et RESPONSABLE.
+          </div>
+        )}
 
         <div style={{ marginTop: 15, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
@@ -562,8 +638,8 @@ export default function AssetDetailPage() {
               {assignmentHistory.map((item) => (
                 <tr key={`assignment-${item.id}`}>
                   <td>{item.changed_at ? new Date(item.changed_at).toLocaleString("fr-FR") : "-"}</td>
-                  <td>{getUserLabelById(usersMap, item.previous_assigned_to)}</td>
-                  <td>{getUserLabelById(usersMap, item.new_assigned_to)}</td>
+                  <td>{getHistoryAssignmentLabel(item, "previous_assigned_to", "previous_assigned_name", usersMap)}</td>
+                  <td>{getHistoryAssignmentLabel(item, "new_assigned_to", "new_assigned_name", usersMap)}</td>
                   <td>{getUserLabelById(usersMap, item.changed_by)}</td>
                 </tr>
               ))}

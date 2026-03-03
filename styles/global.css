@@ -92,8 +92,10 @@ a:hover {
   height: 64px;
   object-fit: contain;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 4px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 6px 12px rgba(10, 20, 40, 0.2);
+  padding: 6px;
 }
 
 .sidebar-brand h2 {
@@ -574,6 +576,11 @@ h1 {
   height: auto;
   object-fit: contain;
   margin-bottom: 6px;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid rgba(7, 16, 33, 0.12);
+  box-shadow: 0 12px 24px rgba(7, 16, 33, 0.24);
+  padding: 10px 14px;
 }
 
 .login-info-panel h1 {

@@ -27,6 +27,7 @@ export default function NewAsset() {
   const [companyId, setCompanyId] = useState("");
   const [companies, setCompanies] = useState([]);
   const [assignedToUserId, setAssignedToUserId] = useState("");
+  const [assignedToName, setAssignedToName] = useState("");
   const [userOptions, setUserOptions] = useState([]);
 
   const [description, setDescription] = useState("");
@@ -67,7 +68,7 @@ export default function NewAsset() {
   }, []);
 
   async function fetchCompanies() {
-    const [{ data: orgs }, { user, profile }, users] = await Promise.all([
+    const [{ data: orgs }, { profile }, users] = await Promise.all([
       supabase.from("organisations").select("id, name").order("name", { ascending: true }),
       getCurrentUserProfile(),
       fetchUserDirectoryList(),
@@ -79,9 +80,23 @@ export default function NewAsset() {
     if (profile?.company_id) {
       setCompanyId(profile.company_id);
     }
-    if (user?.id) {
-      setAssignedToUserId(user.id);
+  }
+
+  function handleAssignedNameChange(value) {
+    setAssignedToName(value);
+    if (assignedToUserId) {
+      setAssignedToUserId("");
     }
+  }
+
+  function handleAssignedUserChange(userId) {
+    setAssignedToUserId(userId);
+    if (!userId) return;
+    const selectedUser = userOptions.find((item) => item.id === userId);
+    if (!selectedUser) return;
+    setAssignedToName(
+      selectedUser.full_name || selectedUser.label || selectedUser.email || selectedUser.id
+    );
   }
 
   async function handleSubmit(e) {
@@ -107,6 +122,7 @@ export default function NewAsset() {
         category,
         company_id: companyId,
         assigned_to_user_id: assignedToUserId || null,
+        assigned_to_name: assignedToName.trim() || null,
         purchase_date: purchaseDate || null,
         purchase_value: purchaseVal,
         status,
@@ -123,11 +139,28 @@ export default function NewAsset() {
         value: purchaseVal,
       };
 
-      const { data: createdAsset, error } = await supabase
+      let { data: createdAsset, error } = await supabase
         .from("assets")
         .insert([payload])
         .select("id")
         .single();
+
+      if (error && String(error.message || "").toLowerCase().includes("assigned_to_name")) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.assigned_to_name;
+        const fallbackInsert = await supabase
+          .from("assets")
+          .insert([fallbackPayload])
+          .select("id")
+          .single();
+        createdAsset = fallbackInsert.data;
+        error = fallbackInsert.error;
+        if (!fallbackInsert.error && assignedToName.trim()) {
+          setWarning(
+            "Actif cree, mais le nom libre d'attribution n'a pas ete sauvegarde. Execute la migration SQL de colonne assigned_to_name."
+          );
+        }
+      }
 
       if (error) throw error;
 
@@ -208,10 +241,23 @@ export default function NewAsset() {
 
             <div className="form-field">
               <label>Attribué à</label>
+              <input
+                className="input"
+                value={assignedToName}
+                onChange={(e) => handleAssignedNameChange(e.target.value)}
+                placeholder="Tapez le nom de la personne"
+              />
+              <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+                Saisie libre. Optionnel: sélectionner un utilisateur existant.
+              </small>
+            </div>
+
+            <div className="form-field">
+              <label>Utilisateur existant (optionnel)</label>
               <select
                 className="select"
                 value={assignedToUserId}
-                onChange={(e) => setAssignedToUserId(e.target.value)}
+                onChange={(e) => handleAssignedUserChange(e.target.value)}
               >
                 <option value="">Non attribué</option>
                 {userOptions.map((user) => (

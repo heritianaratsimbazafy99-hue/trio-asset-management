@@ -28,6 +28,14 @@ function eventLabel(item) {
   return type || "Événement";
 }
 
+function getAssignmentLabel(usersMap, userId, name) {
+  const fromUser = userId ? getUserLabelById(usersMap, userId) : "";
+  if (fromUser && fromUser !== userId) return fromUser;
+  if (name) return name;
+  if (fromUser && fromUser !== "-") return fromUser;
+  return "-";
+}
+
 export default function AssetJournalPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -160,6 +168,8 @@ export default function AssetJournalPage() {
       actor_user_id: item.changed_by,
       previous_assigned_to: item.previous_assigned_to,
       new_assigned_to: item.new_assigned_to,
+      previous_assigned_name: item.previous_assigned_name,
+      new_assigned_name: item.new_assigned_name,
       details: "Attribution actif",
       source: "asset_assignment_history",
     }));
@@ -277,8 +287,16 @@ export default function AssetJournalPage() {
             <tbody>
               {filteredEvents.map((item) => {
                 const actor = getUserLabelById(usersMap, item.actor_user_id);
-                const oldAssignee = getUserLabelById(usersMap, item.previous_assigned_to);
-                const newAssignee = getUserLabelById(usersMap, item.new_assigned_to);
+                const oldAssignee = getAssignmentLabel(
+                  usersMap,
+                  item.previous_assigned_to,
+                  item.previous_assigned_name
+                );
+                const newAssignee = getAssignmentLabel(
+                  usersMap,
+                  item.new_assigned_to,
+                  item.new_assigned_name
+                );
                 const assignmentDelta =
                   item.event_type === "ASSET_ASSIGNMENT_INITIAL" || item.event_type === "ASSET_ASSIGNMENT_CHANGE"
                     ? ` | de ${oldAssignee} vers ${newAssignee}`

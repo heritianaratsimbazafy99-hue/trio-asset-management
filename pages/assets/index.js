@@ -9,6 +9,7 @@ import {
   hasOneRole,
 } from "../../lib/accessControl";
 import {
+  fetchUserDirectoryList,
   fetchUserDirectoryMapByIds,
   getUserLabelById,
 } from "../../lib/userDirectory";
@@ -18,6 +19,60 @@ function formatEUR(value) {
     style: "currency",
     currency: "EUR",
   }).format(Number(value || 0));
+}
+
+function sanitizeSearchTerm(term) {
+  return String(term || "")
+    .trim()
+    .replaceAll(",", " ")
+    .replaceAll("(", " ")
+    .replaceAll(")", " ")
+    .trim();
+}
+
+function getUserOptionLabel(user) {
+  return (
+    user?.label ||
+    user?.full_name ||
+    user?.email ||
+    user?.id ||
+    ""
+  );
+}
+
+function getMatchingAssignedUserIds(searchUsers, term) {
+  if (!term) return [];
+  const lowered = term.toLowerCase();
+  return (searchUsers || [])
+    .filter((user) => getUserOptionLabel(user).toLowerCase().includes(lowered))
+    .map((user) => user.id)
+    .filter(Boolean);
+}
+
+function buildAssetSearchOrClause(term, searchUsers, supportsAssignedToName) {
+  if (!term) return "";
+
+  const filters = [`name.ilike.%${term}%`];
+  if (supportsAssignedToName) {
+    filters.push(`assigned_to_name.ilike.%${term}%`);
+  }
+
+  const matchingUserIds = getMatchingAssignedUserIds(searchUsers, term);
+  if (matchingUserIds.length > 0) {
+    filters.push(`assigned_to_user_id.in.(${matchingUserIds.join(",")})`);
+  }
+
+  return filters.join(",");
+}
+
+function getAssignedDisplayLabel(asset, assignedUsersMap) {
+  const fromUser = asset?.assigned_to_user_id
+    ? getUserLabelById(assignedUsersMap, asset.assigned_to_user_id)
+    : "";
+  if (fromUser && fromUser !== asset?.assigned_to_user_id) return fromUser;
+  if (asset?.assigned_to_name) return asset.assigned_to_name;
+  if (fromUser) return fromUser;
+  return "-";
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -44,6 +99,8 @@ export default function AssetsPage() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [assignedUsersMap, setAssignedUsersMap] = useState({});
+  const [searchUsers, setSearchUsers] = useState([]);
+  const [supportsAssignedToName, setSupportsAssignedToName] = useState(true);
 
   const canDeleteAssets = hasOneRole(userRole, [APP_ROLES.CEO]);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -54,15 +111,32 @@ export default function AssetsPage() {
 
   useEffect(() => {
     fetchAssets();
-  }, [selectedCompanyId, searchTerm, page, pageSize, sortBy, sortDirection]);
+  }, [
+    selectedCompanyId,
+    searchTerm,
+    page,
+    pageSize,
+    sortBy,
+    sortDirection,
+    searchUsers,
+    supportsAssignedToName,
+  ]);
 
   async function fetchInitialContext() {
-    const [{ data: orgs }, { profile }] = await Promise.all([
+    const [{ data: orgs }, { profile }, users] = await Promise.all([
       supabase.from("organisations").select("id, name").order("name", { ascending: true }),
       getCurrentUserProfile(),
+      fetchUserDirectoryList(),
     ]);
     setCompanies(orgs || []);
     setUserRole(profile?.role || "");
+    setSearchUsers(users || []);
+
+    const probe = await supabase.from("assets").select("assigned_to_name").limit(1);
+    const columnMissing =
+      probe?.error &&
+      String(probe.error.message || "").toLowerCase().includes("assigned_to_name");
+    setSupportsAssignedToName(!columnMissing);
   }
 
   async function fetchAssets() {
@@ -77,8 +151,10 @@ export default function AssetsPage() {
     if (selectedCompanyId !== "ALL") {
       query = query.eq("company_id", selectedCompanyId);
     }
-    if (searchTerm.trim()) {
-      query = query.ilike("name", `%${searchTerm.trim()}%`);
+    const term = sanitizeSearchTerm(searchTerm);
+    if (term) {
+      const orClause = buildAssetSearchOrClause(term, searchUsers, supportsAssignedToName);
+      query = query.or(orClause);
     }
 
     const from = (page - 1) * pageSize;
@@ -122,8 +198,10 @@ export default function AssetsPage() {
     if (selectedCompanyId !== "ALL") {
       query = query.eq("company_id", selectedCompanyId);
     }
-    if (searchTerm.trim()) {
-      query = query.ilike("name", `%${searchTerm.trim()}%`);
+    const term = sanitizeSearchTerm(searchTerm);
+    if (term) {
+      const orClause = buildAssetSearchOrClause(term, searchUsers, supportsAssignedToName);
+      query = query.or(orClause);
     }
 
     const { data, error: exportError } = await query;
@@ -151,7 +229,7 @@ export default function AssetsPage() {
       item.category || "",
       Number(item.purchase_value ?? item.value ?? 0).toFixed(2),
       item.status || "",
-      getUserLabelById(map, item.assigned_to_user_id),
+      getAssignedDisplayLabel(item, map),
       item.created_at ? new Date(item.created_at).toISOString() : "",
     ]);
 
@@ -231,7 +309,7 @@ export default function AssetsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto auto", gap: 12 }}>
           <input
             className="input"
-            placeholder="Rechercher par nom d'actif..."
+            placeholder="Rechercher par actif ou personne attribuée..."
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
           />
@@ -336,7 +414,7 @@ export default function AssetsPage() {
                     <td>{asset.category || "-"}</td>
                     <td>{formatEUR(asset.purchase_value || asset.value)}</td>
                     <td><StatusBadge status={asset.status} /></td>
-                    <td>{getUserLabelById(assignedUsersMap, asset.assigned_to_user_id)}</td>
+                    <td>{getAssignedDisplayLabel(asset, assignedUsersMap)}</td>
                     <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn-primary" onClick={() => handleIncident(asset.id)}>
                         Incident
