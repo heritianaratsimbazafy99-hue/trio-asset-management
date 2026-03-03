@@ -1,0 +1,232 @@
+GUIDE UTILISATEUR - TRIO ASSET
+Version: 1.0
+Date: 23/02/2026
+Public: Collaborateurs du groupe (Mobix, Roka, Madajob, Madatours)
+
+=================================================================
+1) OBJECTIF DE L'APPLICATION
+=================================================================
+Trio Asset est une application interne de gestion des immobilisations.
+Elle permet de:
+- centraliser le parc d'actifs de tout le groupe,
+- suivre incidents et maintenances,
+- piloter les coûts, la rentabilité et les risques,
+- aider a la decision (reparation vs remplacement).
+
+=================================================================
+2) ROLES ET AUTORISATIONS
+=================================================================
+Les droits dependent du role utilisateur.
+
+CEO:
+- acces complet a toutes les sections,
+- gestion des utilisateurs (Administration),
+- suppression d'actif,
+- cloture incidents et maintenances,
+- parametres de scoring et pilotage global.
+
+Responsable maintenance:
+- acces au parc, incidents, maintenance, dashboard,
+- cloture incidents,
+- cloture maintenances,
+- pas de suppression d'actif.
+
+Utilisateur standard:
+- consultation et operations courantes autorisees,
+- pas d'acces aux actions reservees CEO.
+
+Important:
+- tous les utilisateurs voient tous les actifs du groupe,
+- chaque actif reste rattache a une societe (champ obligatoire a la creation).
+
+=================================================================
+3) CONNEXION A L'APPLICATION
+=================================================================
+1. Ouvrir l'URL de l'application.
+2. Saisir email et mot de passe.
+3. Cliquer sur "Se connecter".
+4. En cas d'echec:
+   - verifier email/mot de passe,
+   - verifier que le compte existe et est confirme,
+   - contacter l'administrateur CEO si besoin.
+
+=================================================================
+4) NAVIGATION PRINCIPALE
+=================================================================
+Barre laterale:
+- Dashboard
+- Immobilisations
+- Incidents
+- Maintenance
+- Administration (CEO)
+- Deconnexion
+
+Astuce:
+- les compteurs a droite de chaque menu indiquent le volume actuel.
+
+=================================================================
+5) GESTION DES IMMOBILISATIONS
+=================================================================
+5.1 Liste des actifs
+- filtrage par societe,
+- recherche par nom,
+- pagination pour parcourir un grand volume,
+- tri selon les colonnes (si active selon votre version).
+
+5.2 Creer un actif
+Champs principaux:
+- nom de l'actif,
+- societe (Mobix, Roka, Madajob, Madatours),
+- valeur d'achat,
+- date d'achat,
+- type d'amortissement (lineaire/degressif selon config),
+- duree d'amortissement,
+- categorie / code / statut.
+
+Pieces jointes:
+- vous pouvez ajouter des documents (facture, photo, contrat, PV, etc.),
+- les documents sont stockes dans le bucket asset-documents,
+- verifier la lisibilite des fichiers avant validation.
+
+5.3 Fiche detail actif
+La fiche affiche notamment:
+- valeur d'achat,
+- VNC actuelle,
+- cout maintenance cumule,
+- ratio maintenance/valeur,
+- indicateur rentable/non rentable,
+- historique incidents et maintenance,
+- graphiques d'evolution.
+
+Actions utiles:
+- ouvrir rapidement un incident,
+- ouvrir rapidement une maintenance,
+- consulter et telecharger les pieces jointes.
+
+=================================================================
+6) MODULE INCIDENTS
+=================================================================
+6.1 Creer un incident
+- choisir l'actif,
+- saisir titre + description,
+- definir le statut initial.
+
+6.2 Suivre les incidents
+- visualiser la liste et le statut,
+- cliquer sur le nom de l'actif pour ouvrir sa fiche detail.
+
+6.3 Cloture d'incident
+- action reservee CEO et Responsable maintenance,
+- statut passe en RESOLU,
+- horodatage de resolution enregistre pour audit.
+
+=================================================================
+7) MODULE MAINTENANCE
+=================================================================
+7.1 Creer une maintenance
+- choisir l'actif,
+- saisir cout, priorite, deadline, description.
+
+7.2 Suivi SLA
+Statuts SLA possibles:
+- OK: dans les delais,
+- A_RISQUE: proche echeance,
+- EN_RETARD: depassement,
+- SANS_DELAI: deadline non definie,
+- TERMINEE: cloturee.
+
+7.3 Cloture de maintenance
+- action reservee CEO et Responsable maintenance,
+- renseigne is_completed + date de cloture,
+- genere une trace dans les logs d'audit.
+
+=================================================================
+8) DASHBOARD CFO & PREDICTIF
+=================================================================
+Le dashboard centralise les indicateurs de pilotage.
+
+Principaux KPI:
+- valeur portefeuille,
+- cout maintenance sur la periode,
+- maintenance/valeur,
+- incidents ouverts,
+- SLA en retard,
+- budget maintenance N+1,
+- actifs rentables / non rentables,
+- actifs critiques (score bas).
+
+Visualisations:
+- comparatif par societe,
+- repartition incidents,
+- tendance maintenance + prevision,
+- top risques 30 jours,
+- details de score par actif.
+
+Interactions cliquables:
+- cliquer sur un actif dans les tableaux pour ouvrir sa fiche detail,
+- cliquer sur certains graphes pour filtrer/drill-down.
+
+Export:
+- export CSV,
+- export PDF (selon ecran et droits).
+
+=================================================================
+9) ADMINISTRATION (CEO)
+=================================================================
+Objectif:
+- gerer les profils, roles et rattachements,
+- piloter la gouvernance d'acces.
+
+Bonnes pratiques:
+- attribuer les roles selon le besoin reel,
+- verifier les rattachements avant validation,
+- auditer regulierement les comptes inactifs.
+
+=================================================================
+10) AUDIT ET SECURITE
+=================================================================
+L'application enregistre les operations sensibles:
+- suppression d'actif,
+- cloture incident,
+- cloture maintenance.
+
+Chaque log contient:
+- qui (utilisateur),
+- quoi (action),
+- quand (timestamp),
+- sur quel element (entity_id / type).
+
+Recommandations:
+- utiliser des mots de passe robustes,
+- ne jamais partager son compte,
+- deconnecter sa session sur poste partage.
+
+=================================================================
+11) BONNES PRATIQUES OPERATIONNELLES
+=================================================================
+- Toujours renseigner correctement la societe de l'actif.
+- Ajouter les pieces justificatives a la creation.
+- Mettre a jour les statuts (incident/maintenance) sans retard.
+- Utiliser les filtres avant analyse dashboard.
+- Verifier les actifs en top risque chaque semaine.
+
+=================================================================
+12) CHECKLIST RAPIDE (NOUVEAU COLLABORATEUR)
+=================================================================
+[ ] Je me connecte avec mon compte personnel.
+[ ] Je connais mon role (CEO, Responsable maintenance, Standard).
+[ ] Je sais creer un actif avec societe + piece jointe.
+[ ] Je sais ouvrir et cloturer un incident (si autorise).
+[ ] Je sais ouvrir et cloturer une maintenance (si autorise).
+[ ] Je sais utiliser les filtres dashboard.
+[ ] Je sais ouvrir une fiche actif en cliquant sur son nom.
+
+=================================================================
+13) SUPPORT
+=================================================================
+En cas de probleme:
+1. Capturer une capture d'ecran de l'erreur.
+2. Noter l'action realisee juste avant l'erreur.
+3. Transmettre au CEO / administrateur interne.
+
+Fin du guide.

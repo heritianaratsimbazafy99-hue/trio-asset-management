@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 280" role="img" aria-label="Groupe Trio">
+  <defs>
+    <linearGradient id="trioBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a8fe5" />
+      <stop offset="100%" stop-color="#0b3d91" />
+    </linearGradient>
+    <linearGradient id="trioGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#47c96e" />
+      <stop offset="100%" stop-color="#0c8a74" />
+    </linearGradient>
+  </defs>
+
+  <text x="40" y="80" font-size="64" font-weight="700" fill="url(#trioBlue)" font-family="Arial, sans-serif">
+    GROUPE
+  </text>
+
+  <text x="42" y="212" font-size="178" font-style="italic" font-weight="900" fill="url(#trioBlue)" font-family="Arial Black, Arial, sans-serif">
+    TRIO
+  </text>
+
+  <circle cx="755" cy="148" r="112" fill="none" stroke="url(#trioBlue)" stroke-width="12" />
+  <circle cx="755" cy="148" r="62" fill="#f2f5f7" stroke="#0b3d91" stroke-width="8" />
+  <path d="M735 132 L775 172" stroke="#0e1320" stroke-width="16" stroke-linecap="round" />
+  <path d="M775 132 L735 172" stroke="#0e1320" stroke-width="16" stroke-linecap="round" />
+  <path d="M755 148 L807 120 A62 62 0 0 1 790 187 Z" fill="url(#trioGreen)" opacity="0.95" />
+</svg>
