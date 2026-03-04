@@ -231,7 +231,7 @@ $$;
 
 drop trigger if exists trg_track_asset_assignment_changes on public.assets;
 create trigger trg_track_asset_assignment_changes
-before insert or update on public.assets
+after insert or update on public.assets
 for each row
 execute function public.track_asset_assignment_changes();
 
