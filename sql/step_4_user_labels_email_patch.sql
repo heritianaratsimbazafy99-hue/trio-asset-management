@@ -1,4 +1,4 @@
--- Step 4 - Display user email labels instead of technical fallback
+-- Step 4 - Display user labels (full_name else email local-part)
 -- Date: 2026-03-04
 
 create or replace function public.get_user_labels(p_ids uuid[] default null)
@@ -12,7 +12,7 @@ as $$
     ud.id,
     coalesce(
       nullif(ud.full_name, ''),
-      nullif(ud.email, ''),
+      nullif(split_part(coalesce(ud.email, ''), '@', 1), ''),
       'Utilisateur ' || left(ud.id::text, 8)
     ) as label
   from public.user_directory ud

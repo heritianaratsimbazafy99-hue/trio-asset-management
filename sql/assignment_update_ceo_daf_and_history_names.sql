@@ -38,13 +38,21 @@ alter table if exists public.asset_assignment_history
 
 -- Optional backfill for existing history rows from user_directory labels.
 update public.asset_assignment_history h
-set previous_assigned_name = coalesce(previous_assigned_name, nullif(ud.full_name, ''), nullif(ud.email, ''))
+set previous_assigned_name = coalesce(
+  previous_assigned_name,
+  nullif(ud.full_name, ''),
+  nullif(split_part(coalesce(ud.email, ''), '@', 1), '')
+)
 from public.user_directory ud
 where h.previous_assigned_to = ud.id
   and coalesce(h.previous_assigned_name, '') = '';
 
 update public.asset_assignment_history h
-set new_assigned_name = coalesce(new_assigned_name, nullif(ud.full_name, ''), nullif(ud.email, ''))
+set new_assigned_name = coalesce(
+  new_assigned_name,
+  nullif(ud.full_name, ''),
+  nullif(split_part(coalesce(ud.email, ''), '@', 1), '')
+)
 from public.user_directory ud
 where h.new_assigned_to = ud.id
   and coalesce(h.new_assigned_name, '') = '';

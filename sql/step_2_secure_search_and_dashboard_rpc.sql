@@ -50,10 +50,10 @@ begin
   v_offset := greatest(0, coalesce(p_offset, 0));
 
   v_sort_sql := case lower(coalesce(p_sort_by, ''))
-    when 'name' then 'a.name'
-    when 'purchase_value' then 'coalesce(a.purchase_value, a.value, 0)'
-    when 'created_at' then 'a.created_at'
-    else 'a.created_at'
+    when 'name' then 'name'
+    when 'purchase_value' then 'coalesce(purchase_value, value, 0)'
+    when 'created_at' then 'created_at'
+    else 'created_at'
   end;
 
   v_dir_sql := case lower(coalesce(p_sort_direction, ''))

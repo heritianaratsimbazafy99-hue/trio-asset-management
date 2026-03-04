@@ -9,7 +9,11 @@ alter table if exists public.assets
 
 -- Backfill from user_directory when a technical user assignment already exists.
 update public.assets a
-set assigned_to_name = coalesce(nullif(ud.full_name, ''), nullif(ud.email, ''), a.assigned_to_name)
+set assigned_to_name = coalesce(
+  nullif(ud.full_name, ''),
+  nullif(split_part(coalesce(ud.email, ''), '@', 1), ''),
+  a.assigned_to_name
+)
 from public.user_directory ud
 where a.assigned_to_user_id = ud.id
   and coalesce(a.assigned_to_name, '') = '';

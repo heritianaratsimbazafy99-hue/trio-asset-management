@@ -253,6 +253,7 @@ h1 {
   padding: 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .badge {
