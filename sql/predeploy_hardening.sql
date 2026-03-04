@@ -60,7 +60,7 @@ set search_path = public
 as $$
   select
     ud.id,
-    coalesce(nullif(ud.full_name, ''), 'Utilisateur ' || left(ud.id::text, 8)) as label
+    coalesce(nullif(ud.full_name, ''), nullif(ud.email, ''), 'Utilisateur ' || left(ud.id::text, 8)) as label
   from public.user_directory ud
   where p_ids is null or ud.id = any(p_ids)
   order by label asc;

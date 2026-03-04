@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import StatusBadge from "../../components/StatusBadge";
@@ -9,7 +10,6 @@ import {
   hasOneRole,
 } from "../../lib/accessControl";
 import {
-  fetchUserDirectoryList,
   fetchUserDirectoryMapByIds,
   getUserLabelById,
 } from "../../lib/userDirectory";
@@ -21,48 +21,8 @@ function formatEUR(value) {
   }).format(Number(value || 0));
 }
 
-function sanitizeSearchTerm(term) {
-  return String(term || "")
-    .trim()
-    .replaceAll(",", " ")
-    .replaceAll("(", " ")
-    .replaceAll(")", " ")
-    .trim();
-}
-
-function getUserOptionLabel(user) {
-  return (
-    user?.label ||
-    user?.full_name ||
-    user?.email ||
-    user?.id ||
-    ""
-  );
-}
-
-function getMatchingAssignedUserIds(searchUsers, term) {
-  if (!term) return [];
-  const lowered = term.toLowerCase();
-  return (searchUsers || [])
-    .filter((user) => getUserOptionLabel(user).toLowerCase().includes(lowered))
-    .map((user) => user.id)
-    .filter(Boolean);
-}
-
-function buildAssetSearchOrClause(term, searchUsers, supportsAssignedToName) {
-  if (!term) return "";
-
-  const filters = [`name.ilike.%${term}%`];
-  if (supportsAssignedToName) {
-    filters.push(`assigned_to_name.ilike.%${term}%`);
-  }
-
-  const matchingUserIds = getMatchingAssignedUserIds(searchUsers, term);
-  if (matchingUserIds.length > 0) {
-    filters.push(`assigned_to_user_id.in.(${matchingUserIds.join(",")})`);
-  }
-
-  return filters.join(",");
+function normalizeSearchTerm(term) {
+  return String(term || "").trim();
 }
 
 function getAssignedDisplayLabel(asset, assignedUsersMap) {
@@ -99,8 +59,6 @@ export default function AssetsPage() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [assignedUsersMap, setAssignedUsersMap] = useState({});
-  const [searchUsers, setSearchUsers] = useState([]);
-  const [supportsAssignedToName, setSupportsAssignedToName] = useState(true);
 
   const canDeleteAssets = hasOneRole(userRole, [APP_ROLES.CEO]);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -118,50 +76,32 @@ export default function AssetsPage() {
     pageSize,
     sortBy,
     sortDirection,
-    searchUsers,
-    supportsAssignedToName,
   ]);
 
   async function fetchInitialContext() {
-    const [{ data: orgs }, { profile }, users] = await Promise.all([
+    const [{ data: orgs }, { profile }] = await Promise.all([
       supabase.from("organisations").select("id, name").order("name", { ascending: true }),
       getCurrentUserProfile(),
-      fetchUserDirectoryList(),
     ]);
     setCompanies(orgs || []);
     setUserRole(profile?.role || "");
-    setSearchUsers(users || []);
-
-    const probe = await supabase.from("assets").select("assigned_to_name").limit(1);
-    const columnMissing =
-      probe?.error &&
-      String(probe.error.message || "").toLowerCase().includes("assigned_to_name");
-    setSupportsAssignedToName(!columnMissing);
   }
 
   async function fetchAssets() {
     setLoading(true);
     setError("");
 
-    let query = supabase
-      .from("assets")
-      .select("*, organisations(name)", { count: "exact" })
-      .order(sortBy, { ascending: sortDirection === "asc" });
-
-    if (selectedCompanyId !== "ALL") {
-      query = query.eq("company_id", selectedCompanyId);
-    }
-    const term = sanitizeSearchTerm(searchTerm);
-    if (term) {
-      const orClause = buildAssetSearchOrClause(term, searchUsers, supportsAssignedToName);
-      query = query.or(orClause);
-    }
-
     const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    query = query.range(from, to);
+    const term = normalizeSearchTerm(searchTerm);
+    const { data, error: queryError } = await supabase.rpc("search_assets_secure", {
+      p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
+      p_search: term || null,
+      p_limit: pageSize,
+      p_offset: from,
+      p_sort_by: sortBy,
+      p_sort_direction: sortDirection,
+    });
 
-    const { data, count, error: queryError } = await query;
     if (queryError) {
       setError(queryError.message);
       setAssets([]);
@@ -170,9 +110,13 @@ export default function AssetsPage() {
       return;
     }
 
-    setAssets(data || []);
-    setTotalCount(count || 0);
-    const assignedIds = (data || []).map((item) => item.assigned_to_user_id).filter(Boolean);
+    const rows = (data || []).map((item) => ({
+      ...item,
+      organisations: { name: item.organisation_name || "" },
+    }));
+    setAssets(rows);
+    setTotalCount(rows.length ? Number(rows[0].total_count || 0) : 0);
+    const assignedIds = rows.map((item) => item.assigned_to_user_id).filter(Boolean);
     const map = await fetchUserDirectoryMapByIds(assignedIds);
     setAssignedUsersMap(map);
     setLoading(false);
@@ -190,25 +134,37 @@ export default function AssetsPage() {
     setExporting(true);
     setError("");
 
-    let query = supabase
-      .from("assets")
-      .select("*, organisations(name)")
-      .order(sortBy, { ascending: sortDirection === "asc" });
+    const term = normalizeSearchTerm(searchTerm);
+    const batchSize = 500;
+    let offset = 0;
+    let allRows = [];
 
-    if (selectedCompanyId !== "ALL") {
-      query = query.eq("company_id", selectedCompanyId);
-    }
-    const term = sanitizeSearchTerm(searchTerm);
-    if (term) {
-      const orClause = buildAssetSearchOrClause(term, searchUsers, supportsAssignedToName);
-      query = query.or(orClause);
-    }
+    while (true) {
+      const { data, error: batchError } = await supabase.rpc("search_assets_secure", {
+        p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
+        p_search: term || null,
+        p_limit: batchSize,
+        p_offset: offset,
+        p_sort_by: sortBy,
+        p_sort_direction: sortDirection,
+      });
 
-    const { data, error: exportError } = await query;
-    if (exportError) {
-      setError(exportError.message);
-      setExporting(false);
-      return;
+      if (batchError) {
+        setError(batchError.message);
+        setExporting(false);
+        return;
+      }
+
+      const rows = (data || []).map((item) => ({
+        ...item,
+        organisations: { name: item.organisation_name || "" },
+      }));
+      allRows = allRows.concat(rows);
+
+      if (rows.length < batchSize) break;
+      offset += batchSize;
+
+      if (offset >= 10000) break;
     }
 
     const headers = [
@@ -221,9 +177,9 @@ export default function AssetsPage() {
       "Date création",
     ];
 
-    const assignedIds = (data || []).map((item) => item.assigned_to_user_id).filter(Boolean);
+    const assignedIds = allRows.map((item) => item.assigned_to_user_id).filter(Boolean);
     const map = await fetchUserDirectoryMapByIds(assignedIds);
-    const rows = (data || []).map((item) => [
+    const rows = allRows.map((item) => [
       item.name,
       item.organisations?.name || "",
       item.category || "",
@@ -247,10 +203,6 @@ export default function AssetsPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     setExporting(false);
-  }
-
-  function goToDetail(id) {
-    router.push(`/assets/${id}`);
   }
 
   function handleIncident(id) {
@@ -403,12 +355,9 @@ export default function AssetsPage() {
                 {assets.map((asset) => (
                   <tr key={asset.id}>
                     <td>
-                      <span
-                        onClick={() => goToDetail(asset.id)}
-                        style={{ cursor: "pointer", color: "#1d3557", fontWeight: 600 }}
-                      >
+                      <Link className="dashboard-link" href={`/assets/${asset.id}`}>
                         {asset.name}
-                      </span>
+                      </Link>
                     </td>
                     <td>{asset.organisations?.name || "-"}</td>
                     <td>{asset.category || "-"}</td>

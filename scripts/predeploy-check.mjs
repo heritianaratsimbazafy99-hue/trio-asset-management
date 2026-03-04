@@ -13,6 +13,10 @@ const REQUIRED_FILES = [
   "sql/security_admin_audit_upgrade.sql",
   "sql/feature_audit_assignment_history.sql",
   "sql/predeploy_hardening.sql",
+  "sql/step_1_security_integrity_hardening.sql",
+  "sql/step_2_secure_search_and_dashboard_rpc.sql",
+  "sql/step_3_post_migration_checks.sql",
+  "sql/step_4_user_labels_email_patch.sql",
 ];
 
 const REQUIRED_ENV_KEYS = [

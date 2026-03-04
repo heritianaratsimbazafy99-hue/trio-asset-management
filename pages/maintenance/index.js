@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
+import { computeMaintenanceSlaStatus } from "../../lib/sla";
 import {
   APP_ROLES,
   getCurrentUserProfile,
@@ -17,18 +18,6 @@ function formatEUR(value) {
     style: "currency",
     currency: "EUR",
   }).format(Number(value || 0));
-}
-
-function computeSlaStatus(item) {
-  if (item.is_completed || item.status === "TERMINEE") return "TERMINEE";
-  if (!item.due_date) return "SANS_DELAI";
-  const now = Date.now();
-  const dueTs = new Date(item.due_date).getTime();
-  if (!Number.isFinite(dueTs)) return "SANS_DELAI";
-  if (dueTs < now) return "EN_RETARD";
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  if (dueTs - now <= 2 * oneDayMs) return "A_RISQUE";
-  return "OK";
 }
 
 export default function MaintenancePage() {
@@ -137,8 +126,8 @@ export default function MaintenancePage() {
                     : "-"}
                 </td>
                 <td>
-                  <span className={`sla-badge ${computeSlaStatus(m).toLowerCase()}`}>
-                    {computeSlaStatus(m)}
+                  <span className={`sla-badge ${computeMaintenanceSlaStatus(m).toLowerCase()}`}>
+                    {computeMaintenanceSlaStatus(m)}
                   </span>
                 </td>
                 <td>{getUserLabelById(usersMap, m.reported_by)}</td>

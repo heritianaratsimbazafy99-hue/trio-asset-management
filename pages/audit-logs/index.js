@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
@@ -51,7 +51,7 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     fetchAuditLogs();
-  }, [actionFilter, page, pageSize]);
+  }, [actionFilter, page, pageSize, search]);
 
   async function fetchAuditLogs() {
     setLoading(true);
@@ -68,29 +68,17 @@ export default function AuditLogsPage() {
       return;
     }
 
-    let query = supabase
-      .from("audit_logs")
-      .select("id, actor_user_id, action, entity_type, entity_id, payload, created_at", {
-        count: "exact",
-      })
-      .order("created_at", { ascending: false });
-
-    if (actionFilter !== "ALL") {
-      query = query.eq("action", actionFilter);
-    }
-
-    const term = search.trim();
-    if (term) {
-      query = query.or(
-        `action.ilike.%${term}%,entity_type.ilike.%${term}%,entity_id.ilike.%${term}%`
-      );
-    }
-
     const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    query = query.range(from, to);
+    const { data: logsData, error: logsError } = await supabase.rpc(
+      "search_audit_logs_secure",
+      {
+        p_action: actionFilter,
+        p_search: search.trim() || null,
+        p_limit: pageSize,
+        p_offset: from,
+      }
+    );
 
-    const { data: logsData, error: logsError, count } = await query;
     if (logsError) {
       setError(logsError.message);
       setLogs([]);
@@ -101,7 +89,7 @@ export default function AuditLogsPage() {
 
     const rows = logsData || [];
     setLogs(rows);
-    setTotalCount(count || 0);
+    setTotalCount(rows.length ? Number(rows[0].total_count || 0) : 0);
 
     const actorIds = rows.map((row) => row.actor_user_id).filter(Boolean);
     const users = await fetchUserDirectoryMapByIds(actorIds);
@@ -128,28 +116,6 @@ export default function AuditLogsPage() {
 
     setLoading(false);
   }
-
-  const filteredLogs = useMemo(() => {
-    return logs.filter((row) => {
-      const actionMatch = actionFilter === "ALL" || row.action === actionFilter;
-      if (!actionMatch) return false;
-
-      const term = search.trim().toLowerCase();
-      if (!term) return true;
-
-      const actor = getUserLabelById(actorsMap, row.actor_user_id).toLowerCase();
-      const payload = stringifyPayload(row.payload).toLowerCase();
-      const entity = `${row.entity_type} ${row.entity_id}`.toLowerCase();
-      const action = String(row.action || "").toLowerCase();
-
-      return (
-        actor.includes(term) ||
-        payload.includes(term) ||
-        entity.includes(term) ||
-        action.includes(term)
-      );
-    });
-  }, [logs, search, actorsMap]);
 
   const canAccessAudit = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
 
@@ -188,7 +154,10 @@ export default function AuditLogsPage() {
             className="input"
             placeholder="Rechercher (utilisateur, entité, payload, action)..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
 
           <button className="btn-secondary" onClick={() => fetchAuditLogs()}>
@@ -215,7 +184,7 @@ export default function AuditLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((row) => {
+              {logs.map((row) => {
                 const assetId = getAssetIdFromLog(row);
                 const assetName = assetId ? assetsMap[assetId] || assetId : "-";
                 return (
@@ -237,7 +206,7 @@ export default function AuditLogsPage() {
                   </tr>
                 );
               })}
-              {filteredLogs.length === 0 && (
+              {logs.length === 0 && (
                 <tr>
                   <td colSpan={6}>Aucun log trouvé.</td>
                 </tr>

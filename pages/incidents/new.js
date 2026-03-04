@@ -11,7 +11,6 @@ export default function NewIncident() {
   const [assetId, setAssetId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("OUVERT");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -48,7 +47,6 @@ export default function NewIncident() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const isResolved = status === "RESOLU";
 
     const { error } = await supabase
       .from("incidents")
@@ -57,10 +55,10 @@ export default function NewIncident() {
           asset_id: selectedAssetId,
           title,
           description,
-          status,
+          status: "OUVERT",
           reported_by: user?.id || null,
-          resolved_by: isResolved ? user?.id || null : null,
-          resolved_at: isResolved ? new Date().toISOString() : null,
+          resolved_by: null,
+          resolved_at: null,
         },
       ]);
 
@@ -117,16 +115,8 @@ export default function NewIncident() {
         </div>
 
         <div className="form-field">
-          <label>Statut</label>
-          <select
-            className="select"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="OUVERT">OUVERT</option>
-            <option value="EN_COURS">EN_COURS</option>
-            <option value="RESOLU">RESOLU</option>
-          </select>
+          <label>Statut initial</label>
+          <input className="input" value="OUVERT" readOnly />
         </div>
 
         <button type="submit" disabled={loading} className="btn-primary">

@@ -3,6 +3,37 @@ import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../lib/accessControl";
 
+const SIDEBAR_CACHE_KEY = "trio_sidebar_counts_v1";
+
+function readSidebarCache() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(SIDEBAR_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeSidebarCache(payload) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SIDEBAR_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function getActiveSection(pathname = "") {
+  if (pathname === "/assets") return "assets";
+  if (pathname === "/incidents") return "incidents";
+  if (pathname === "/maintenance") return "maintenance";
+  return null;
+}
+
 export default function Sidebar() {
   const router = useRouter();
 
@@ -14,28 +45,56 @@ export default function Sidebar() {
   const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
-    fetchCounts();
-  }, []);
+    const cached = readSidebarCache();
+    if (cached?.counts) {
+      setCounts(cached.counts);
+    }
+    if (cached?.userRole) {
+      setUserRole(cached.userRole);
+    }
+    fetchCounts(cached?.counts, cached?.userRole);
+  }, [router.pathname]);
 
-  async function fetchCounts() {
+  async function fetchCounts(previousCounts, previousRole) {
+    const fallbackCounts = {
+      assets: previousCounts?.assets ?? 0,
+      incidents: previousCounts?.incidents ?? 0,
+      maintenance: previousCounts?.maintenance ?? 0,
+    };
+    const activeSection = getActiveSection(router.pathname);
+
     const [
       { count: assetCount },
       { count: incidentCount },
       { count: maintenanceCount },
       { profile },
     ] = await Promise.all([
-      supabase.from("assets").select("*", { count: "exact", head: true }),
-      supabase.from("incidents").select("*", { count: "exact", head: true }),
-      supabase.from("maintenance").select("*", { count: "exact", head: true }),
+      activeSection === "assets"
+        ? Promise.resolve({ count: fallbackCounts.assets })
+        : supabase.from("assets").select("id", { count: "exact", head: true }),
+      activeSection === "incidents"
+        ? Promise.resolve({ count: fallbackCounts.incidents })
+        : supabase.from("incidents").select("id", { count: "exact", head: true }),
+      activeSection === "maintenance"
+        ? Promise.resolve({ count: fallbackCounts.maintenance })
+        : supabase.from("maintenance").select("id", { count: "exact", head: true }),
       getCurrentUserProfile(),
     ]);
 
-    setCounts({
+    const nextCounts = {
       assets: assetCount || 0,
       incidents: incidentCount || 0,
       maintenance: maintenanceCount || 0,
+    };
+    const nextRole = profile?.role || previousRole || "";
+
+    setCounts(nextCounts);
+    setUserRole(nextRole);
+    writeSidebarCache({
+      counts: nextCounts,
+      userRole: nextRole,
+      updatedAt: new Date().toISOString(),
     });
-    setUserRole(profile?.role || "");
   }
 
   function isActive(path) {
@@ -69,7 +128,10 @@ export default function Sidebar() {
           <button
             key={item.path}
             className={`sidebar-link ${isActive(item.path) ? "active" : ""}`}
-            onClick={() => router.push(item.path)}
+            onClick={() => {
+              if (isActive(item.path)) return;
+              router.push(item.path);
+            }}
           >
             <span>{item.label}</span>
             {typeof item.count === "number" && (
