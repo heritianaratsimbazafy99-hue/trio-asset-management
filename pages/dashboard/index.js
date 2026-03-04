@@ -70,6 +70,7 @@ export default function Dashboard() {
   const [organisations, setOrganisations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [topRisksChart, setTopRisksChart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [contextReady, setContextReady] = useState(false);
@@ -156,22 +157,40 @@ export default function Dashboard() {
     setSummaryLoading(true);
     setError("");
 
-    const { data, error: rpcError } = await supabase.rpc("dashboard_summary", {
+    const commonPayload = {
       p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
       p_category: selectedCategory === "ALL" ? null : selectedCategory,
       p_period: selectedPeriod,
-      p_risk_page: riskPage,
-      p_risk_page_size: RISK_PAGE_SIZE,
-    });
+    };
+
+    const [summaryResponse, top10Response] = await Promise.all([
+      supabase.rpc("dashboard_summary", {
+        ...commonPayload,
+        p_risk_page: riskPage,
+        p_risk_page_size: RISK_PAGE_SIZE,
+      }),
+      supabase.rpc("dashboard_summary", {
+        ...commonPayload,
+        p_risk_page: 1,
+        p_risk_page_size: 10,
+      }),
+    ]);
+
+    const { data, error: rpcError } = summaryResponse;
 
     if (rpcError) {
       setError(rpcError.message);
       setSummary(null);
+      setTopRisksChart([]);
       setSummaryLoading(false);
       return;
     }
 
     setSummary(data || {});
+    const top10Rows = !top10Response.error
+      ? top10Response.data?.top_risks || []
+      : (data?.top_risks || []).slice(0, 10);
+    setTopRisksChart(top10Rows);
     setSummaryLoading(false);
   }
 
@@ -184,6 +203,22 @@ export default function Dashboard() {
   const maintenanceMonthly = summary?.maintenance_monthly || [];
   const actionsOpenIncidents = summary?.actions_open_incidents || [];
   const actionsOverdueMaintenance = summary?.actions_overdue_maintenance || [];
+
+  const topRisksChartData = useMemo(() => {
+    return (topRisksChart || []).slice(0, 10).map((item, index) => {
+      const fullName = String(item?.name || "-");
+      const shortName = fullName.length > 24 ? `${fullName.slice(0, 24)}...` : fullName;
+      return {
+        rank: index + 1,
+        label: `${index + 1}. ${shortName}`,
+        full_name: fullName,
+        company_name: item?.company_name || "-",
+        risk_score_30d: normalizeNumber(item?.risk_score_30d),
+        incident_count_30d: normalizeNumber(item?.incident_count_30d),
+        overdue_maintenance_count: normalizeNumber(item?.overdue_maintenance_count),
+      };
+    });
+  }, [topRisksChart]);
 
   const portfolioValue = normalizeNumber(kpis.portfolio_value);
   const maintenanceCostPeriod = normalizeNumber(kpis.maintenance_cost_period);
@@ -512,6 +547,46 @@ export default function Dashboard() {
               <Line type="monotone" dataKey="value" stroke="#0b3d91" name="Coût maintenance" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="card">
+          <h3>Top 10 actifs les plus risqués</h3>
+          {topRisksChartData.length ? (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart
+                data={topRisksChartData}
+                layout="vertical"
+                margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="label" type="category" width={180} />
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (name === "Risque 30j") return [value, name];
+                    if (name === "Incidents 30j") return [value, name];
+                    if (name === "Maintenances en retard") return [value, name];
+                    return [value, name];
+                  }}
+                  labelFormatter={(_, payload) => {
+                    const row = payload?.[0]?.payload;
+                    if (!row) return "";
+                    return `${row.full_name} (${row.company_name})`;
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="risk_score_30d" fill="#dc2626" name="Risque 30j" />
+                <Bar dataKey="incident_count_30d" fill="#f59e0b" name="Incidents 30j" />
+                <Bar
+                  dataKey="overdue_maintenance_count"
+                  fill="#0b3d91"
+                  name="Maintenances en retard"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p>Aucun actif à risque pour ces filtres.</p>
+          )}
         </div>
       </div>
 
