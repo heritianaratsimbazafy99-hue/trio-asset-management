@@ -172,7 +172,7 @@ export default function AuditLogsPage() {
         {loading ? (
           <p>Chargement des logs...</p>
         ) : (
-          <table className="table">
+          <table className="table audit-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -189,11 +189,11 @@ export default function AuditLogsPage() {
                 const assetName = assetId ? assetsMap[assetId] || assetId : "-";
                 return (
                   <tr key={row.id}>
-                    <td>{formatDate(row.created_at)}</td>
+                    <td className="cell-nowrap">{formatDate(row.created_at)}</td>
                     <td>{getUserLabelById(actorsMap, row.actor_user_id)}</td>
                     <td>{row.action}</td>
                     <td>{row.entity_type}:{row.entity_id}</td>
-                    <td>
+                    <td className="audit-cell-asset">
                       {assetId ? (
                         <Link className="dashboard-link" href={`/assets/${assetId}`}>
                           {assetName}
@@ -202,7 +202,7 @@ export default function AuditLogsPage() {
                         "-"
                       )}
                     </td>
-                    <td>{stringifyPayload(row.payload)}</td>
+                    <td className="audit-cell-details">{stringifyPayload(row.payload)}</td>
                   </tr>
                 );
               })}

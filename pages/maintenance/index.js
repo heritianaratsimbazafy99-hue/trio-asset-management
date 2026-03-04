@@ -97,11 +97,11 @@ export default function MaintenancePage() {
               <th>Coût</th>
               <th>Priorité</th>
               <th>Deadline</th>
-              <th>SLA</th>
+              <th className="cell-center">SLA</th>
               <th>Signalé par</th>
               <th>Clôturé par</th>
               <th>Date clôture</th>
-              <th>Statut</th>
+              <th className="cell-center">Statut</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -125,7 +125,7 @@ export default function MaintenancePage() {
                     ? new Date(m.due_date).toLocaleDateString("fr-FR")
                     : "-"}
                 </td>
-                <td>
+                <td className="cell-center cell-nowrap">
                   <span className={`sla-badge ${computeMaintenanceSlaStatus(m).toLowerCase()}`}>
                     {computeMaintenanceSlaStatus(m)}
                   </span>
@@ -138,7 +138,7 @@ export default function MaintenancePage() {
                     : "-"}
                 </td>
 
-                <td>
+                <td className="cell-center cell-nowrap">
                   {m.is_completed ? (
                     <span className="badge-success">Terminée</span>
                   ) : (
