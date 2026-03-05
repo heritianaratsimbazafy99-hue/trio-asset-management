@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -201,6 +202,8 @@ export default function Dashboard() {
   const topRiskTotalPages = Math.max(1, Math.ceil(topRisksTotal / RISK_PAGE_SIZE));
   const companyComparison = summary?.company_comparison || [];
   const maintenanceMonthly = summary?.maintenance_monthly || [];
+  const amortizationMonthly = summary?.amortization_monthly || [];
+  const amortizationKpis = summary?.amortization_kpis || {};
   const actionsOpenIncidents = summary?.actions_open_incidents || [];
   const actionsOverdueMaintenance = summary?.actions_overdue_maintenance || [];
 
@@ -220,11 +223,43 @@ export default function Dashboard() {
     });
   }, [topRisksChart]);
 
+  const amortizationChartData = useMemo(() => {
+    const monthLabels = {
+      "01": "Jan",
+      "02": "Fev",
+      "03": "Mar",
+      "04": "Avr",
+      "05": "Mai",
+      "06": "Jun",
+      "07": "Jul",
+      "08": "Aou",
+      "09": "Sep",
+      "10": "Oct",
+      "11": "Nov",
+      "12": "Dec",
+    };
+    return (amortizationMonthly || []).map((item) => {
+      const month = String(item?.month || "");
+      const monthNumber = month.slice(5, 7);
+      return {
+        month,
+        month_label: monthLabels[monthNumber] || month,
+        amortized: normalizeNumber(item?.amortized),
+        cumulative: normalizeNumber(item?.cumulative),
+        target_cumulative: normalizeNumber(item?.target_cumulative),
+      };
+    });
+  }, [amortizationMonthly]);
+
   const portfolioValue = normalizeNumber(kpis.portfolio_value);
   const maintenanceCostPeriod = normalizeNumber(kpis.maintenance_cost_period);
   const maintenanceVsPortfolio = portfolioValue
     ? (maintenanceCostPeriod / portfolioValue) * 100
     : 0;
+  const amortizedYtd = normalizeNumber(amortizationKpis.amortized_ytd);
+  const amortizationAnnualTarget = normalizeNumber(amortizationKpis.annual_target);
+  const amortizationRemaining = normalizeNumber(amortizationKpis.remaining);
+  const amortizationCoverageRate = normalizeNumber(amortizationKpis.coverage_rate);
 
   const incidentStatusData = useMemo(
     () => [
@@ -588,6 +623,58 @@ export default function Dashboard() {
             <p>Aucun actif à risque pour ces filtres.</p>
           )}
         </div>
+      </div>
+
+      <div className="card">
+        <h3>Amortissement annuel</h3>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12 }}>
+          <p>
+            <strong>Amorti YTD:</strong> {formatEUR(amortizedYtd)}
+          </p>
+          <p>
+            <strong>Cible annuelle:</strong> {formatEUR(amortizationAnnualTarget)}
+          </p>
+          <p>
+            <strong>Reste à amortir:</strong> {formatEUR(amortizationRemaining)}
+          </p>
+          <p>
+            <strong>Couverture:</strong> {amortizationCoverageRate.toFixed(1)}%
+          </p>
+        </div>
+        {amortizationChartData.length ? (
+          <ResponsiveContainer width="100%" height={340}>
+            <ComposedChart data={amortizationChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month_label" />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip formatter={(value) => formatEUR(value)} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="amortized" fill="#0b3d91" name="Amorti mensuel" />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="cumulative"
+                stroke="#0a8f87"
+                strokeWidth={3}
+                name="Cumul amorti"
+                dot={false}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="target_cumulative"
+                stroke="#f59e0b"
+                strokeWidth={2}
+                name="Cumul cible"
+                dot={false}
+                strokeDasharray="4 4"
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        ) : (
+          <p>Aucune donnée d'amortissement disponible (vérifie la migration SQL dashboard).</p>
+        )}
       </div>
 
       <div className="card">
