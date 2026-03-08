@@ -271,8 +271,14 @@ h1 {
   align-items: center;
 }
 
+.audit-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .audit-table {
   table-layout: fixed;
+  min-width: 1160px;
 }
 
 .audit-table th,
@@ -282,38 +288,111 @@ h1 {
 
 .audit-table th:nth-child(1),
 .audit-table td:nth-child(1) {
-  width: 136px;
+  width: 170px;
 }
 
 .audit-table th:nth-child(2),
 .audit-table td:nth-child(2) {
-  width: 140px;
+  width: 180px;
 }
 
 .audit-table th:nth-child(3),
 .audit-table td:nth-child(3) {
-  width: 140px;
+  width: 160px;
 }
 
 .audit-table th:nth-child(4),
 .audit-table td:nth-child(4) {
-  width: 182px;
+  width: 200px;
 }
 
 .audit-table th:nth-child(5),
 .audit-table td:nth-child(5) {
-  width: 120px;
+  width: 170px;
 }
 
-.audit-table td.audit-cell-asset,
-.audit-table td.audit-cell-asset a {
+.audit-cell-date {
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.audit-cell-user {
+  overflow-wrap: anywhere;
+}
+
+.audit-cell-action {
+  white-space: normal;
+}
+
+.audit-action-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #e6eef8;
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.audit-cell-entity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audit-entity-type {
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #475569;
+  font-weight: 700;
+}
+
+.audit-entity-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.audit-table td.audit-cell-asset a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 .audit-table td.audit-cell-details {
   overflow-wrap: anywhere;
   word-break: break-word;
   line-height: 1.35;
+}
+
+.audit-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audit-detail-item {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+}
+
+.audit-detail-key {
+  color: #475569;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+}
+
+.audit-detail-value {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .badge {

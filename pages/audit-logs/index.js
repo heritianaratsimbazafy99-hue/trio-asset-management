@@ -19,21 +19,36 @@ function formatDate(value) {
   return new Date(value).toLocaleString("fr-FR");
 }
 
+function formatActionLabel(action) {
+  if (!action) return "-";
+  return String(action).replaceAll("_", " ");
+}
+
+function normalizePayloadValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+
+function getPayloadEntries(payload) {
+  if (!payload || typeof payload !== "object") return [];
+  return Object.entries(payload).slice(0, 6).map(([key, value]) => ({
+    key,
+    value: normalizePayloadValue(value),
+  }));
+}
+
 function getAssetIdFromLog(log) {
   if (!log) return null;
   if (log.entity_type === "assets") return log.entity_id;
   if (log.payload?.asset_id) return log.payload.asset_id;
   return null;
-}
-
-function stringifyPayload(payload) {
-  if (!payload || typeof payload !== "object") return "-";
-  const keys = Object.keys(payload);
-  if (!keys.length) return "-";
-  return keys
-    .slice(0, 5)
-    .map((key) => `${key}: ${String(payload[key] ?? "-")}`)
-    .join(" | ");
 }
 
 export default function AuditLogsPage() {
@@ -172,47 +187,72 @@ export default function AuditLogsPage() {
         {loading ? (
           <p>Chargement des logs...</p>
         ) : (
-          <table className="table audit-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Utilisateur</th>
-                <th>Action</th>
-                <th>Entité</th>
-                <th>Actif</th>
-                <th>Détails</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((row) => {
-                const assetId = getAssetIdFromLog(row);
-                const assetName = assetId ? assetsMap[assetId] || assetId : "-";
-                return (
-                  <tr key={row.id}>
-                    <td className="cell-nowrap">{formatDate(row.created_at)}</td>
-                    <td>{getUserLabelById(actorsMap, row.actor_user_id)}</td>
-                    <td>{row.action}</td>
-                    <td>{row.entity_type}:{row.entity_id}</td>
-                    <td className="audit-cell-asset">
-                      {assetId ? (
-                        <Link className="dashboard-link" href={`/assets/${assetId}`}>
-                          {assetName}
-                        </Link>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td className="audit-cell-details">{stringifyPayload(row.payload)}</td>
-                  </tr>
-                );
-              })}
-              {logs.length === 0 && (
+          <div className="audit-table-wrap">
+            <table className="table audit-table">
+              <thead>
                 <tr>
-                  <td colSpan={6}>Aucun log trouvé.</td>
+                  <th>Date</th>
+                  <th>Utilisateur</th>
+                  <th>Action</th>
+                  <th>Entité</th>
+                  <th>Actif</th>
+                  <th>Détails</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {logs.map((row) => {
+                  const assetId = getAssetIdFromLog(row);
+                  const assetName = assetId ? assetsMap[assetId] || assetId : "-";
+                  const payloadEntries = getPayloadEntries(row.payload);
+                  return (
+                    <tr key={row.id}>
+                      <td className="audit-cell-date">{formatDate(row.created_at)}</td>
+                      <td className="audit-cell-user">{getUserLabelById(actorsMap, row.actor_user_id)}</td>
+                      <td className="audit-cell-action">
+                        <span className="audit-action-pill" title={row.action}>
+                          {formatActionLabel(row.action)}
+                        </span>
+                      </td>
+                      <td className="audit-cell-entity">
+                        <span className="audit-entity-type">{row.entity_type || "-"}</span>
+                        <span className="audit-entity-id" title={row.entity_id || "-"}>
+                          {row.entity_id || "-"}
+                        </span>
+                      </td>
+                      <td className="audit-cell-asset">
+                        {assetId ? (
+                          <Link className="dashboard-link" href={`/assets/${assetId}`}>
+                            {assetName}
+                          </Link>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="audit-cell-details">
+                        {payloadEntries.length ? (
+                          <div className="audit-details-list">
+                            {payloadEntries.map((entry) => (
+                              <div key={`${row.id}-${entry.key}`} className="audit-detail-item">
+                                <span className="audit-detail-key">{entry.key}</span>
+                                <span className="audit-detail-value">{entry.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {logs.length === 0 && (
+                  <tr>
+                    <td colSpan={6}>Aucun log trouvé.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {!loading && (
