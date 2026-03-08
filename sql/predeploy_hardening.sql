@@ -49,7 +49,7 @@ drop policy if exists user_directory_select_own_or_leadership on public.user_dir
 create policy user_directory_select_own_or_leadership
 on public.user_directory
 for select
-using (auth.uid() = id or public.is_ceo() or public.is_daf());
+using (auth.uid() = user_directory.id or public.is_ceo() or public.is_daf());
 
 create or replace function public.get_user_labels(p_ids uuid[] default null)
 returns table (id uuid, label text)

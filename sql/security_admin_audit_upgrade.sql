@@ -74,14 +74,14 @@ drop policy if exists profiles_update_own_only on public.profiles;
 create policy profiles_select_own_or_ceo
 on public.profiles
 for select
-using (auth.uid() = id or public.is_ceo());
+using (auth.uid() = profiles.id or public.is_ceo());
 
 -- Keep direct updates only for the owner profile.
 create policy profiles_update_own_only
 on public.profiles
 for update
-using (auth.uid() = id)
-with check (auth.uid() = id);
+using (auth.uid() = profiles.id)
+with check (auth.uid() = profiles.id);
 
 create or replace function public.admin_upsert_profile(
   p_user_id uuid,
@@ -100,7 +100,7 @@ begin
     raise exception 'forbidden: only CEO can manage profiles';
   end if;
 
-  v_role := upper(coalesce(p_role, ''));
+  v_role := upper(trim(coalesce(p_role, '')));
   if v_role not in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE') then
     raise exception 'invalid role: %', p_role;
   end if;
@@ -109,11 +109,15 @@ begin
     raise exception 'company is required';
   end if;
 
-  if not exists (select 1 from auth.users u where u.id = p_user_id) then
+  if not exists (
+    select 1
+    from auth.users as au
+    where au.id = p_user_id
+  ) then
     raise exception 'user not found in auth.users';
   end if;
 
-  insert into public.profiles (id, role, company_id)
+  insert into public.profiles as p (id, role, company_id)
   values (p_user_id, v_role, p_company_id)
   on conflict (id) do update
     set role = excluded.role,
@@ -121,8 +125,9 @@ begin
 
   return query
   select p.id, p.role, p.company_id
-  from public.profiles p
-  where p.id = p_user_id;
+  from public.profiles as p
+  where p.id = p_user_id
+  limit 1;
 end;
 $$;
 
@@ -154,7 +159,7 @@ drop policy if exists user_directory_delete_ceo on public.user_directory;
 create policy user_directory_select_own_or_ceo
 on public.user_directory
 for select
-using (auth.uid() = id or public.is_ceo());
+using (auth.uid() = user_directory.id or public.is_ceo());
 
 create policy user_directory_insert_ceo
 on public.user_directory

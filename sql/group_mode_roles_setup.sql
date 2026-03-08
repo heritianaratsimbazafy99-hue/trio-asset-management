@@ -87,7 +87,7 @@ create policy profiles_select_own_or_ceo
 on public.profiles
 for select
 using (
-  auth.uid() = id
+  auth.uid() = profiles.id
   or public.is_ceo()
 );
 
@@ -102,11 +102,11 @@ create policy profiles_update_own_or_ceo
 on public.profiles
 for update
 using (
-  auth.uid() = id
+  auth.uid() = profiles.id
   or public.is_ceo()
 )
 with check (
-  auth.uid() = id
+  auth.uid() = profiles.id
   or public.is_ceo()
 );
 

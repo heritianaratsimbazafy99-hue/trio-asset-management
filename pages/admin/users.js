@@ -66,7 +66,7 @@ export default function AdminUsersPage() {
   async function fetchProfiles() {
     const { data, error: queryError } = await supabase
       .from("profiles")
-      .select("id, role, company_id, organisations(name)")
+      .select("id, role, company_id")
       .order("created_at", { ascending: false });
 
     if (queryError) {
