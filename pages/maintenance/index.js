@@ -12,13 +12,7 @@ import {
   fetchUserDirectoryMapByIds,
   getUserLabelById,
 } from "../../lib/userDirectory";
-
-function formatEUR(value) {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(Number(value || 0));
-}
+import { formatMGA } from "../../lib/currency";
 
 export default function MaintenancePage() {
   const [maintenance, setMaintenance] = useState([]);
@@ -118,7 +112,7 @@ export default function MaintenancePage() {
                   )}
                 </td>
                 <td>{m.title}</td>
-                <td>{formatEUR(m.cost)}</td>
+                <td>{formatMGA(m.cost)}</td>
                 <td>{m.priority || "-"}</td>
                 <td>
                   {m.due_date

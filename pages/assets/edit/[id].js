@@ -136,7 +136,7 @@ export default function EditAsset() {
         </div>
 
         <div>
-          <label>Valeur (€)</label>
+          <label>Valeur (Ar)</label>
           <input
             name="value"
             type="number"

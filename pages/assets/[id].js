@@ -26,14 +26,7 @@ import {
   getUserLabelById,
 } from "../../lib/userDirectory";
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
-
-function formatEUR(value) {
-  const n = Number(value || 0);
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(n);
-}
+import { formatMGA } from "../../lib/currency";
 
 function safeText(value) {
   return String(value ?? "-")
@@ -342,7 +335,7 @@ export default function AssetDetailPage() {
       ? maintenance
           .map(
             (item) =>
-              `<tr><td>${safeText(item.title || item.description)}</td><td>${formatEUR(
+              `<tr><td>${safeText(item.title || item.description)}</td><td>${formatMGA(
                 item.cost
               )}</td></tr>`
           )
@@ -353,9 +346,9 @@ export default function AssetDetailPage() {
       ? analysis.schedule
           .map(
             (row) =>
-              `<tr><td>${row.year}</td><td>${row.method}</td><td>${formatEUR(
+              `<tr><td>${row.year}</td><td>${row.method}</td><td>${formatMGA(
                 row.annual
-              )}</td><td>${formatEUR(row.cumulative)}</td><td>${formatEUR(
+              )}</td><td>${formatMGA(row.cumulative)}</td><td>${formatMGA(
                 row.vncEnd
               )}</td></tr>`
           )
@@ -393,9 +386,9 @@ export default function AssetDetailPage() {
   <p><strong>Date achat:</strong> ${safeText(asset.purchase_date)}</p>
   <p><strong>Attribue a:</strong> ${safeText(getAssignedDisplayLabel(asset, usersMap))}</p>
   <p><strong>Type amortissement:</strong> ${safeText(asset.amortissement_type)}</p>
-  <p><strong>Valeur achat:</strong> ${formatEUR(analysis.purchaseValue)}</p>
-  <p><strong>VNC actuelle:</strong> ${formatEUR(analysis.vnc)}</p>
-  <p><strong>Total maintenance:</strong> ${formatEUR(analysis.totalMaintenance)}</p>
+  <p><strong>Valeur achat:</strong> ${formatMGA(analysis.purchaseValue)}</p>
+  <p><strong>VNC actuelle:</strong> ${formatMGA(analysis.vnc)}</p>
+  <p><strong>Total maintenance:</strong> ${formatMGA(analysis.totalMaintenance)}</p>
   <p><strong>Ratio maintenance/valeur:</strong> ${analysis.maintenanceRatio.toFixed(1)}%</p>
   <div class="highlight"><strong>Recommendation:</strong> ${safeText(
     analysis.recommendation
@@ -440,15 +433,15 @@ export default function AssetDetailPage() {
       <div className="dashboard-grid">
         <div className="card">
           <h3>Valeur d'achat</h3>
-          <p>{formatEUR(analysis.purchaseValue)}</p>
+          <p>{formatMGA(analysis.purchaseValue)}</p>
         </div>
         <div className="card">
           <h3>VNC actuelle</h3>
-          <p>{formatEUR(analysis.vnc)}</p>
+          <p>{formatMGA(analysis.vnc)}</p>
         </div>
         <div className="card">
           <h3>Total maintenance</h3>
-          <p>{formatEUR(analysis.totalMaintenance)}</p>
+          <p>{formatMGA(analysis.totalMaintenance)}</p>
         </div>
         <div className="card">
           <h3>Maintenance / Valeur</h3>
@@ -565,7 +558,7 @@ export default function AssetDetailPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
               <YAxis />
-              <Tooltip formatter={(value) => formatEUR(value)} />
+              <Tooltip formatter={(value) => formatMGA(value)} />
               <Line type="monotone" dataKey="vncEnd" stroke="#0b3d91" name="VNC fin annee" />
               <Line type="monotone" dataKey="annual" stroke="#0a8f87" name="Dotation annuelle" />
             </LineChart>
@@ -579,7 +572,7 @@ export default function AssetDetailPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => formatEUR(value)} />
+              <Tooltip formatter={(value) => formatMGA(value)} />
               <Line type="monotone" dataKey="value" stroke="#f59e0b" name="Maintenance" />
             </LineChart>
           </ResponsiveContainer>
@@ -607,10 +600,10 @@ export default function AssetDetailPage() {
                 <tr key={`${row.year}-${row.yearIndex}`}>
                   <td>{row.year}</td>
                   <td>{row.method}</td>
-                  <td>{formatEUR(row.annual)}</td>
-                  <td>{formatEUR(row.cumulative)}</td>
-                  <td>{formatEUR(row.vncStart)}</td>
-                  <td>{formatEUR(row.vncEnd)}</td>
+                  <td>{formatMGA(row.annual)}</td>
+                  <td>{formatMGA(row.cumulative)}</td>
+                  <td>{formatMGA(row.vncStart)}</td>
+                  <td>{formatMGA(row.vncEnd)}</td>
                 </tr>
               ))}
             </tbody>
@@ -701,7 +694,7 @@ export default function AssetDetailPage() {
               {maintenance.map((item) => (
                 <tr key={`maintenance-history-${item.id}`}>
                   <td>{item.title || item.description || "-"}</td>
-                  <td>{formatEUR(item.cost)}</td>
+                  <td>{formatMGA(item.cost)}</td>
                   <td>{item.status || "-"}</td>
                   <td>{getUserLabelById(usersMap, item.reported_by)}</td>
                   <td>{item.created_at ? new Date(item.created_at).toLocaleDateString("fr-FR") : "-"}</td>

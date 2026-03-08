@@ -20,6 +20,7 @@ import {
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
+import { formatMGA } from "../../lib/currency";
 
 const PERIOD_OPTIONS = [
   { value: "30D", label: "30 jours" },
@@ -30,13 +31,6 @@ const PERIOD_OPTIONS = [
 ];
 
 const RISK_PAGE_SIZE = 12;
-
-function formatEUR(value) {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(Number(value || 0));
-}
 
 function formatDate(value) {
   if (!value) return "-";
@@ -331,7 +325,7 @@ export default function Dashboard() {
         <h1>Dashboard CFO & Predictif</h1>
         <div class="kpi">
           <div class="box"><strong>Actifs</strong><br/>${normalizeNumber(kpis.assets_count)}</div>
-          <div class="box"><strong>Valeur portefeuille</strong><br/>${escapeHtml(formatEUR(portfolioValue))}</div>
+          <div class="box"><strong>Valeur portefeuille</strong><br/>${escapeHtml(formatMGA(portfolioValue))}</div>
           <div class="box"><strong>Maintenance / Valeur</strong><br/>${maintenanceVsPortfolio.toFixed(1)}%</div>
           <div class="box"><strong>Incidents ouverts</strong><br/>${normalizeNumber(kpis.open_incidents)}</div>
           <div class="box"><strong>SLA en retard</strong><br/>${normalizeNumber(kpis.sla_late_rate).toFixed(1)}%</div>
@@ -497,11 +491,11 @@ export default function Dashboard() {
       <div className="dashboard-grid">
         <div className="card kpi-solid">
           <h3>Valeur portefeuille</h3>
-          <p>{formatEUR(portfolioValue)}</p>
+          <p>{formatMGA(portfolioValue)}</p>
         </div>
         <div className="card kpi-solid">
           <h3>Coût maintenance (période)</h3>
-          <p>{formatEUR(maintenanceCostPeriod)}</p>
+          <p>{formatMGA(maintenanceCostPeriod)}</p>
         </div>
         <div className="card kpi-solid">
           <h3>Maintenance / Valeur</h3>
@@ -543,7 +537,7 @@ export default function Dashboard() {
               <YAxis />
               <Tooltip
                 formatter={(value, name) => {
-                  if (name === "maintenance_cost") return formatEUR(value);
+                  if (name === "maintenance_cost") return formatMGA(value);
                   return value;
                 }}
               />
@@ -577,7 +571,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => formatEUR(value)} />
+              <Tooltip formatter={(value) => formatMGA(value)} />
               <Legend />
               <Line type="monotone" dataKey="value" stroke="#0b3d91" name="Coût maintenance" strokeWidth={3} />
             </LineChart>
@@ -629,13 +623,13 @@ export default function Dashboard() {
         <h3>Amortissement annuel</h3>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12 }}>
           <p>
-            <strong>Amorti YTD:</strong> {formatEUR(amortizedYtd)}
+            <strong>Amorti YTD:</strong> {formatMGA(amortizedYtd)}
           </p>
           <p>
-            <strong>Cible annuelle:</strong> {formatEUR(amortizationAnnualTarget)}
+            <strong>Cible annuelle:</strong> {formatMGA(amortizationAnnualTarget)}
           </p>
           <p>
-            <strong>Reste à amortir:</strong> {formatEUR(amortizationRemaining)}
+            <strong>Reste à amortir:</strong> {formatMGA(amortizationRemaining)}
           </p>
           <p>
             <strong>Couverture:</strong> {amortizationCoverageRate.toFixed(1)}%
@@ -648,7 +642,7 @@ export default function Dashboard() {
               <XAxis dataKey="month_label" />
               <YAxis yAxisId="left" />
               <YAxis yAxisId="right" orientation="right" />
-              <Tooltip formatter={(value) => formatEUR(value)} />
+              <Tooltip formatter={(value) => formatMGA(value)} />
               <Legend />
               <Bar yAxisId="left" dataKey="amortized" fill="#0b3d91" name="Amorti mensuel" />
               <Line

@@ -126,7 +126,7 @@ export default function NewMaintenance() {
         </div>
 
         <div className="form-field">
-          <label>Coût (€)</label>
+          <label>Coût (Ar)</label>
           <input
             type="number"
             className="input"

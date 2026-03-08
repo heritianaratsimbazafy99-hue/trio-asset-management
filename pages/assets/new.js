@@ -10,6 +10,7 @@ import {
 } from "../../lib/attachmentService";
 import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryList } from "../../lib/userDirectory";
+import { formatMGA } from "../../lib/currency";
 
 export default function NewAsset() {
   const router = useRouter();
@@ -55,13 +56,6 @@ export default function NewAsset() {
       annual: value * (rate / 100),
     };
   }, [purchaseValue, amortYears]);
-
-  const formatEUR = (n) => {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "EUR",
-    }).format(n || 0);
-  };
 
   useEffect(() => {
     fetchCompanies();
@@ -283,7 +277,7 @@ export default function NewAsset() {
             </div>
 
             <div className="form-field">
-              <label>Valeur d’achat (€)</label>
+              <label>Valeur d’achat (Ar)</label>
               <input type="number" className="input" value={purchaseValue} onChange={(e) => setPurchaseValue(e.target.value)} />
             </div>
 
@@ -304,10 +298,10 @@ export default function NewAsset() {
               <label>Description</label>
               <textarea className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
               <div className="amort-box">
-                Amortissement lineaire estime : {formatEUR(annualLinearAmort)}
+                Amortissement lineaire estime : {formatMGA(annualLinearAmort)}
               </div>
               <div className="amort-box">
-                Coefficient degressif : {degressivePreview.coefficient} | Taux degressif : {degressivePreview.rate.toFixed(2)}% | Annee 1 degressive : {formatEUR(degressivePreview.annual)}
+                Coefficient degressif : {degressivePreview.coefficient} | Taux degressif : {degressivePreview.rate.toFixed(2)}% | Annee 1 degressive : {formatMGA(degressivePreview.annual)}
               </div>
             </div>
 

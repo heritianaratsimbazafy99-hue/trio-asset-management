@@ -13,13 +13,7 @@ import {
   fetchUserDirectoryMapByIds,
   getUserLabelById,
 } from "../../lib/userDirectory";
-
-function formatEUR(value) {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(Number(value || 0));
-}
+import { formatMGA } from "../../lib/currency";
 
 function normalizeSearchTerm(term) {
   return String(term || "").trim();
@@ -254,7 +248,7 @@ export default function AssetsPage() {
       <h1>Immobilisations</h1>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <strong>Total valeur (page courante) :</strong> {formatEUR(totals)}
+        <strong>Total valeur (page courante) :</strong> {formatMGA(totals)}
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
@@ -361,7 +355,7 @@ export default function AssetsPage() {
                     </td>
                     <td>{asset.organisations?.name || "-"}</td>
                     <td>{asset.category || "-"}</td>
-                    <td>{formatEUR(asset.purchase_value || asset.value)}</td>
+                    <td>{formatMGA(asset.purchase_value || asset.value)}</td>
                     <td><StatusBadge status={asset.status} /></td>
                     <td>{getAssignedDisplayLabel(asset, assignedUsersMap)}</td>
                     <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
