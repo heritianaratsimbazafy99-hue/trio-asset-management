@@ -303,7 +303,7 @@ h1 {
 
 .audit-table th:nth-child(4),
 .audit-table td:nth-child(4) {
-  width: 200px;
+  width: 240px;
 }
 
 .audit-table th:nth-child(5),
@@ -355,6 +355,13 @@ h1 {
     "Courier New", monospace;
   font-size: 12px;
   color: #0f172a;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.audit-entity-primary {
+  color: #0f172a;
+  font-weight: 700;
   overflow-wrap: anywhere;
   word-break: break-word;
 }

@@ -27,6 +27,7 @@ import {
 } from "../../lib/userDirectory";
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
 import { formatMGA } from "../../lib/currency";
+import { getAssetCategoryLabel } from "../../lib/assetCategories";
 
 function safeText(value) {
   return String(value ?? "-")
@@ -382,7 +383,7 @@ export default function AssetDetailPage() {
 <body>
   <h1>Fiche immobilisation: ${safeText(asset.name)}</h1>
   <p><strong>Code:</strong> ${safeText(asset.code || asset.serial_number)}</p>
-  <p><strong>Categorie:</strong> ${safeText(asset.category)}</p>
+  <p><strong>Categorie:</strong> ${safeText(getAssetCategoryLabel(asset.category))}</p>
   <p><strong>Date achat:</strong> ${safeText(asset.purchase_date)}</p>
   <p><strong>Attribue a:</strong> ${safeText(getAssignedDisplayLabel(asset, usersMap))}</p>
   <p><strong>Type amortissement:</strong> ${safeText(asset.amortissement_type)}</p>
@@ -459,7 +460,7 @@ export default function AssetDetailPage() {
 
       <div className="card">
         <p><strong>Code:</strong> {asset.code || asset.serial_number || "-"}</p>
-        <p><strong>Categorie:</strong> {asset.category || "-"}</p>
+        <p><strong>Categorie:</strong> {getAssetCategoryLabel(asset.category)}</p>
         <p><strong>Date d'achat:</strong> {asset.purchase_date || "-"}</p>
         <p><strong>Statut:</strong> <StatusBadge status={asset.status} /></p>
         <p><strong>Attribué à:</strong> {getAssignedDisplayLabel(asset, usersMap)}</p>

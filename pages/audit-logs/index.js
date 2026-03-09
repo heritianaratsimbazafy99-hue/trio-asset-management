@@ -51,6 +51,23 @@ function getAssetIdFromLog(log) {
   return null;
 }
 
+function getEntityDisplay(row, assetName) {
+  const entityType = row?.entity_type || "-";
+  const entityId = row?.entity_id || "-";
+  if (String(entityType).toLowerCase() === "assets" && assetName && assetName !== "-") {
+    return {
+      type: entityType,
+      primary: assetName,
+      secondary: entityId,
+    };
+  }
+  return {
+    type: entityType,
+    primary: entityId,
+    secondary: null,
+  };
+}
+
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState([]);
   const [actorsMap, setActorsMap] = useState({});
@@ -202,7 +219,13 @@ export default function AuditLogsPage() {
               <tbody>
                 {logs.map((row) => {
                   const assetId = getAssetIdFromLog(row);
-                  const assetName = assetId ? assetsMap[assetId] || assetId : "-";
+                  const payloadAssetName =
+                    typeof row.payload?.name === "string" ? row.payload.name : "";
+                  const assetName = assetId
+                    ? assetsMap[assetId] || payloadAssetName || assetId
+                    : payloadAssetName || "-";
+                  const hasLiveAsset = Boolean(assetId && assetsMap[assetId]);
+                  const entityDisplay = getEntityDisplay(row, assetName);
                   const payloadEntries = getPayloadEntries(row.payload);
                   return (
                     <tr key={row.id}>
@@ -214,18 +237,23 @@ export default function AuditLogsPage() {
                         </span>
                       </td>
                       <td className="audit-cell-entity">
-                        <span className="audit-entity-type">{row.entity_type || "-"}</span>
-                        <span className="audit-entity-id" title={row.entity_id || "-"}>
-                          {row.entity_id || "-"}
+                        <span className="audit-entity-type">{entityDisplay.type}</span>
+                        <span className="audit-entity-primary" title={entityDisplay.primary}>
+                          {entityDisplay.primary}
                         </span>
+                        {entityDisplay.secondary && (
+                          <span className="audit-entity-id" title={entityDisplay.secondary}>
+                            {entityDisplay.secondary}
+                          </span>
+                        )}
                       </td>
                       <td className="audit-cell-asset">
-                        {assetId ? (
+                        {hasLiveAsset ? (
                           <Link className="dashboard-link" href={`/assets/${assetId}`}>
                             {assetName}
                           </Link>
                         ) : (
-                          "-"
+                          assetName
                         )}
                       </td>
                       <td className="audit-cell-details">

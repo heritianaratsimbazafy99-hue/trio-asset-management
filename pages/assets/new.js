@@ -11,6 +11,7 @@ import {
 import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryList } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
+import { FIXED_ASSET_CATEGORIES } from "../../lib/assetCategories";
 
 export default function NewAsset() {
   const router = useRouter();
@@ -213,7 +214,19 @@ export default function NewAsset() {
 
             <div className="form-field">
               <label>Catégorie *</label>
-              <input className="input" value={category} onChange={(e) => setCategory(e.target.value)} />
+              <select
+                className="select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+              >
+                <option value="">Sélectionner une catégorie</option>
+                {FIXED_ASSET_CATEGORIES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-field">

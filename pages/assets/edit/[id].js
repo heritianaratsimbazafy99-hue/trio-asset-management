@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import supabase from "../../../lib/supabaseClient";
+import { FIXED_ASSET_CATEGORIES } from "../../../lib/assetCategories";
 
 export default function EditAsset() {
   const router = useRouter();
@@ -102,6 +103,10 @@ export default function EditAsset() {
     );
   }
 
+  const hasLegacyCategory =
+    form.category &&
+    !FIXED_ASSET_CATEGORIES.some((item) => item.value === form.category);
+
   return (
     <Layout>
       <h1>Éditer l’actif</h1>
@@ -128,11 +133,23 @@ export default function EditAsset() {
 
         <div>
           <label>Catégorie</label>
-          <input
+          <select
             name="category"
             value={form.category}
             onChange={handleChange}
-          />
+          >
+            <option value="">Sélectionner une catégorie</option>
+            {hasLegacyCategory && (
+              <option value={form.category}>
+                Catégorie existante: {form.category}
+              </option>
+            )}
+            {FIXED_ASSET_CATEGORIES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

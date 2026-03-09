@@ -14,9 +14,21 @@ import {
   getUserLabelById,
 } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
+import {
+  FIXED_ASSET_CATEGORIES,
+  getAssetCategoryLabel,
+} from "../../lib/assetCategories";
 
 function normalizeSearchTerm(term) {
   return String(term || "").trim();
+}
+
+function isMissingRpcSignatureError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("search_assets_secure") &&
+    (message.includes("does not exist") || message.includes("could not find the function"))
+  );
 }
 
 function getAssignedDisplayLabel(asset, assignedUsersMap) {
@@ -41,6 +53,7 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("ALL");
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -65,6 +78,7 @@ export default function AssetsPage() {
     fetchAssets();
   }, [
     selectedCompanyId,
+    selectedCategory,
     searchTerm,
     page,
     pageSize,
@@ -87,14 +101,23 @@ export default function AssetsPage() {
 
     const from = (page - 1) * pageSize;
     const term = normalizeSearchTerm(searchTerm);
-    const { data, error: queryError } = await supabase.rpc("search_assets_secure", {
+    const params = {
       p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
       p_search: term || null,
+      p_category: selectedCategory === "ALL" ? null : selectedCategory,
       p_limit: pageSize,
       p_offset: from,
       p_sort_by: sortBy,
       p_sort_direction: sortDirection,
-    });
+    };
+    let { data, error: queryError } = await supabase.rpc("search_assets_secure", params);
+
+    if (queryError && isMissingRpcSignatureError(queryError)) {
+      const { p_category, ...legacyParams } = params;
+      const legacyResponse = await supabase.rpc("search_assets_secure", legacyParams);
+      data = legacyResponse.data;
+      queryError = legacyResponse.error;
+    }
 
     if (queryError) {
       setError(queryError.message);
@@ -134,14 +157,23 @@ export default function AssetsPage() {
     let allRows = [];
 
     while (true) {
-      const { data, error: batchError } = await supabase.rpc("search_assets_secure", {
+      const params = {
         p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
         p_search: term || null,
+        p_category: selectedCategory === "ALL" ? null : selectedCategory,
         p_limit: batchSize,
         p_offset: offset,
         p_sort_by: sortBy,
         p_sort_direction: sortDirection,
-      });
+      };
+
+      let { data, error: batchError } = await supabase.rpc("search_assets_secure", params);
+      if (batchError && isMissingRpcSignatureError(batchError)) {
+        const { p_category, ...legacyParams } = params;
+        const legacyResponse = await supabase.rpc("search_assets_secure", legacyParams);
+        data = legacyResponse.data;
+        batchError = legacyResponse.error;
+      }
 
       if (batchError) {
         setError(batchError.message);
@@ -176,7 +208,7 @@ export default function AssetsPage() {
     const rows = allRows.map((item) => [
       item.name,
       item.organisations?.name || "",
-      item.category || "",
+      getAssetCategoryLabel(item.category),
       Number(item.purchase_value ?? item.value ?? 0).toFixed(2),
       item.status || "",
       getAssignedDisplayLabel(item, map),
@@ -239,6 +271,11 @@ export default function AssetsPage() {
     setPage(1);
   }
 
+  function handleCategoryFilterChange(value) {
+    setSelectedCategory(value);
+    setPage(1);
+  }
+
   const totals = useMemo(() => {
     return assets.reduce((sum, a) => sum + Number(a.purchase_value || a.value || 0), 0);
   }, [assets]);
@@ -252,7 +289,13 @@ export default function AssetsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto auto", gap: 12 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto auto",
+            gap: 12,
+          }}
+        >
           <input
             className="input"
             placeholder="Rechercher par actif ou personne attribuée..."
@@ -269,6 +312,19 @@ export default function AssetsPage() {
             {companies.map((company) => (
               <option key={company.id} value={company.id}>
                 {company.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="select"
+            value={selectedCategory}
+            onChange={(e) => handleCategoryFilterChange(e.target.value)}
+          >
+            <option value="ALL">Toutes les catégories</option>
+            {FIXED_ASSET_CATEGORIES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </select>
@@ -354,7 +410,7 @@ export default function AssetsPage() {
                       </Link>
                     </td>
                     <td>{asset.organisations?.name || "-"}</td>
-                    <td>{asset.category || "-"}</td>
+                    <td>{getAssetCategoryLabel(asset.category)}</td>
                     <td>{formatMGA(asset.purchase_value || asset.value)}</td>
                     <td><StatusBadge status={asset.status} /></td>
                     <td>{getAssignedDisplayLabel(asset, assignedUsersMap)}</td>
