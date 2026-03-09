@@ -4,6 +4,11 @@ import Layout from "../../../components/Layout";
 import supabase from "../../../lib/supabaseClient";
 import { FIXED_ASSET_CATEGORIES } from "../../../lib/assetCategories";
 import { ASSET_CONDITIONS } from "../../../lib/assetConditions";
+import {
+  APP_ROLES,
+  getCurrentUserProfile,
+  hasOneRole,
+} from "../../../lib/accessControl";
 
 export default function EditAsset() {
   const router = useRouter();
@@ -12,16 +17,23 @@ export default function EditAsset() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [asset, setAsset] = useState(null);
+  const [userRole, setUserRole] = useState("");
 
   const [form, setForm] = useState({
     code: "",
     name: "",
     category: "",
     current_condition: "BON",
-    value: "",
+    purchase_value: "",
     status: "EN_SERVICE",
     description: "",
   });
+
+  const canEditPurchaseValue = hasOneRole(userRole, [
+    APP_ROLES.CEO,
+    APP_ROLES.DAF,
+    APP_ROLES.RESPONSABLE,
+  ]);
 
   useEffect(() => {
     if (!id) return;
@@ -31,15 +43,13 @@ export default function EditAsset() {
   const fetchAsset = async () => {
     setLoading(true);
 
-    // 1. Vérifier utilisateur connecté
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    // 1. Vérifier utilisateur connecté + récupérer profil
+    const { user, profile } = await getCurrentUserProfile();
     if (!user) {
       router.push("/login");
       return;
     }
+    setUserRole(profile?.role || "");
 
     // 2. Charger l'actif (RLS protège la société)
     const { data, error } = await supabase
@@ -60,7 +70,7 @@ export default function EditAsset() {
       name: data.name || "",
       category: data.category || "",
       current_condition: data.current_condition || "BON",
-      value: data.value ?? "",
+      purchase_value: data.purchase_value ?? data.value ?? "",
       status: data.status || "EN_SERVICE",
       description: data.description || "",
     });
@@ -76,24 +86,36 @@ export default function EditAsset() {
     e.preventDefault();
     setSaving(true);
 
+    const normalizedPurchaseValue =
+      form.purchase_value === "" ? null : Number(form.purchase_value);
+
+    const updatePayload = {
+      code: form.code,
+      name: form.name,
+      category: form.category,
+      current_condition: form.current_condition || null,
+      status: form.status,
+      description: form.description,
+    };
+
+    if (canEditPurchaseValue) {
+      updatePayload.purchase_value = Number.isFinite(normalizedPurchaseValue)
+        ? normalizedPurchaseValue
+        : null;
+      // La valeur comptable historique suit la valeur d'achat dans l'app actuelle.
+      updatePayload.value = updatePayload.purchase_value;
+    }
+
     const { error } = await supabase
       .from("assets")
-      .update({
-        code: form.code,
-        name: form.name,
-        category: form.category,
-        current_condition: form.current_condition || null,
-        value: form.value ? Number(form.value) : null,
-        status: form.status,
-        description: form.description,
-      })
+      .update(updatePayload)
       .eq("id", id);
 
     setSaving(false);
 
     if (error) {
       console.error(error);
-      alert("Erreur lors de la mise à jour");
+      alert(`Erreur lors de la mise à jour: ${error.message}`);
     } else {
       router.push(`/assets/${id}`);
     }
@@ -172,13 +194,19 @@ export default function EditAsset() {
         </div>
 
         <div>
-          <label>Valeur (Ar)</label>
+          <label>Valeur d'achat (Ar)</label>
           <input
-            name="value"
+            name="purchase_value"
             type="number"
-            value={form.value}
+            value={form.purchase_value}
             onChange={handleChange}
+            disabled={!canEditPurchaseValue}
           />
+          {!canEditPurchaseValue && (
+            <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+              Modification de la valeur d'achat réservée aux rôles CEO, DAF et RESPONSABLE.
+            </small>
+          )}
         </div>
 
         <div>

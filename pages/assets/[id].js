@@ -28,6 +28,7 @@ import {
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
 import { formatMGA } from "../../lib/currency";
 import { getAssetCategoryLabel } from "../../lib/assetCategories";
+import { getAssetConditionLabel } from "../../lib/assetConditions";
 
 function safeText(value) {
   return String(value ?? "-")
@@ -188,6 +189,11 @@ export default function AssetDetailPage() {
     APP_ROLES.DAF,
     APP_ROLES.RESPONSABLE,
   ]);
+  const canEditPurchaseValue = hasOneRole(userRole, [
+    APP_ROLES.CEO,
+    APP_ROLES.DAF,
+    APP_ROLES.RESPONSABLE,
+  ]);
 
   const timelineItems = useMemo(() => {
     const incidentItems = incidents.map((item) => ({
@@ -231,6 +237,8 @@ export default function AssetDetailPage() {
         fileName: uploaded.fileName,
         path: uploaded.path,
         publicUrl: uploaded.publicUrl,
+        thumbnailPath: uploaded.thumbnailPath,
+        thumbnailUrl: uploaded.thumbnailUrl,
       });
       const updated = await fetchAssetAttachments(asset.id);
       setAttachments(updated || []);
@@ -384,6 +392,7 @@ export default function AssetDetailPage() {
   <h1>Fiche immobilisation: ${safeText(asset.name)}</h1>
   <p><strong>Code:</strong> ${safeText(asset.code || asset.serial_number)}</p>
   <p><strong>Categorie:</strong> ${safeText(getAssetCategoryLabel(asset.category))}</p>
+  <p><strong>Etat actuel:</strong> ${safeText(getAssetConditionLabel(asset.current_condition))}</p>
   <p><strong>Date achat:</strong> ${safeText(asset.purchase_date)}</p>
   <p><strong>Attribue a:</strong> ${safeText(getAssignedDisplayLabel(asset, usersMap))}</p>
   <p><strong>Type amortissement:</strong> ${safeText(asset.amortissement_type)}</p>
@@ -430,6 +439,11 @@ export default function AssetDetailPage() {
   return (
     <Layout>
       <h1>{asset.name}</h1>
+      <div style={{ marginBottom: 12 }}>
+        <button className="btn-secondary" onClick={() => router.push("/assets")}>
+          Retour a la liste des immobilisations
+        </button>
+      </div>
 
       <div className="dashboard-grid">
         <div className="card">
@@ -461,6 +475,8 @@ export default function AssetDetailPage() {
       <div className="card">
         <p><strong>Code:</strong> {asset.code || asset.serial_number || "-"}</p>
         <p><strong>Categorie:</strong> {getAssetCategoryLabel(asset.category)}</p>
+        <p><strong>Etat actuel:</strong> {getAssetConditionLabel(asset.current_condition)}</p>
+        <p><strong>Valeur d'achat:</strong> {formatMGA(asset.purchase_value ?? asset.value ?? 0)}</p>
         <p><strong>Date d'achat:</strong> {asset.purchase_date || "-"}</p>
         <p><strong>Statut:</strong> <StatusBadge status={asset.status} /></p>
         <p><strong>Attribué à:</strong> {getAssignedDisplayLabel(asset, usersMap)}</p>
@@ -520,6 +536,14 @@ export default function AssetDetailPage() {
         )}
 
         <div style={{ marginTop: 15, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {canEditPurchaseValue && (
+            <button
+              className="btn-secondary"
+              onClick={() => router.push(`/assets/edit/${asset.id}`)}
+            >
+              Modifier actif
+            </button>
+          )}
           <button
             className="btn-secondary"
             onClick={() => router.push(`/assets/${asset.id}/journal`)}
@@ -713,36 +737,84 @@ export default function AssetDetailPage() {
         {attachmentError && <div className="alert-error">{attachmentError}</div>}
         <div style={{ marginBottom: 14 }}>
           <input type="file" className="input" onChange={handleAttachmentUpload} />
+          <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+            Taille max: 10 MB. Les images sont converties en WebP + miniature avant envoi.
+          </small>
           {attachmentBusy && <p style={{ marginTop: 8 }}>Upload en cours...</p>}
         </div>
 
         {attachments.length === 0 ? (
           <p>Aucune piece jointe.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Document</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attachments.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <a href={item.file_url} target="_blank" rel="noreferrer">
-                      {item.file_name || "Document"}
+          <>
+            {attachments.some((item) => item.thumbnail_url) && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                  gap: 10,
+                  marginBottom: 14,
+                }}
+              >
+                {attachments
+                  .filter((item) => item.thumbnail_url)
+                  .map((item) => (
+                    <a
+                      key={`thumb-${item.id}`}
+                      href={item.file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={item.file_name || "Image"}
+                      style={{
+                        border: "1px solid #d6dfeb",
+                        borderRadius: 10,
+                        padding: 6,
+                        display: "block",
+                        background: "#fff",
+                      }}
+                    >
+                      <img
+                        src={item.thumbnail_url}
+                        alt={item.file_name || "Miniature"}
+                        loading="lazy"
+                        style={{
+                          width: "100%",
+                          aspectRatio: "1 / 1",
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          display: "block",
+                        }}
+                      />
                     </a>
-                  </td>
-                  <td>
-                    {item.created_at
-                      ? new Date(item.created_at).toLocaleDateString("fr-FR")
-                      : "-"}
-                  </td>
+                  ))}
+              </div>
+            )}
+
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {attachments.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <a href={item.file_url} target="_blank" rel="noreferrer">
+                        {item.file_name || "Document"}
+                      </a>
+                    </td>
+                    <td>
+                      {item.created_at
+                        ? new Date(item.created_at).toLocaleDateString("fr-FR")
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </Layout>

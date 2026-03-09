@@ -12,6 +12,7 @@ const ACTION_OPTIONS = [
   "MAINTENANCE_CLOSE",
   "ASSET_ASSIGNMENT_INITIAL",
   "ASSET_ASSIGNMENT_CHANGE",
+  "ASSET_PURCHASE_VALUE_UPDATE",
 ];
 
 function formatDate(value) {
@@ -49,23 +50,6 @@ function getAssetIdFromLog(log) {
   if (log.entity_type === "assets") return log.entity_id;
   if (log.payload?.asset_id) return log.payload.asset_id;
   return null;
-}
-
-function getEntityDisplay(row, assetName) {
-  const entityType = row?.entity_type || "-";
-  const entityId = row?.entity_id || "-";
-  if (String(entityType).toLowerCase() === "assets" && assetName && assetName !== "-") {
-    return {
-      type: entityType,
-      primary: assetName,
-      secondary: entityId,
-    };
-  }
-  return {
-    type: entityType,
-    primary: entityId,
-    secondary: null,
-  };
 }
 
 export default function AuditLogsPage() {
@@ -184,7 +168,7 @@ export default function AuditLogsPage() {
 
           <input
             className="input"
-            placeholder="Rechercher (utilisateur, entité, payload, action)..."
+            placeholder="Rechercher (utilisateur, actif, payload, action)..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -211,7 +195,6 @@ export default function AuditLogsPage() {
                   <th>Date</th>
                   <th>Utilisateur</th>
                   <th>Action</th>
-                  <th>Entité</th>
                   <th>Actif</th>
                   <th>Détails</th>
                 </tr>
@@ -225,7 +208,6 @@ export default function AuditLogsPage() {
                     ? assetsMap[assetId] || payloadAssetName || assetId
                     : payloadAssetName || "-";
                   const hasLiveAsset = Boolean(assetId && assetsMap[assetId]);
-                  const entityDisplay = getEntityDisplay(row, assetName);
                   const payloadEntries = getPayloadEntries(row.payload);
                   return (
                     <tr key={row.id}>
@@ -235,17 +217,6 @@ export default function AuditLogsPage() {
                         <span className="audit-action-pill" title={row.action}>
                           {formatActionLabel(row.action)}
                         </span>
-                      </td>
-                      <td className="audit-cell-entity">
-                        <span className="audit-entity-type">{entityDisplay.type}</span>
-                        <span className="audit-entity-primary" title={entityDisplay.primary}>
-                          {entityDisplay.primary}
-                        </span>
-                        {entityDisplay.secondary && (
-                          <span className="audit-entity-id" title={entityDisplay.secondary}>
-                            {entityDisplay.secondary}
-                          </span>
-                        )}
                       </td>
                       <td className="audit-cell-asset">
                         {hasLiveAsset ? (
@@ -275,7 +246,7 @@ export default function AuditLogsPage() {
                 })}
                 {logs.length === 0 && (
                   <tr>
-                    <td colSpan={6}>Aucun log trouvé.</td>
+                    <td colSpan={5}>Aucun log trouvé.</td>
                   </tr>
                 )}
               </tbody>

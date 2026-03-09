@@ -99,11 +99,11 @@ begin
   end if;
 
   if v_accounting_changed then
-    if public.is_ceo() or public.is_daf() then
+    if public.is_ceo() or public.is_daf() or public.is_responsable() then
       return new;
     end if;
 
-    raise exception 'forbidden: only CEO or DAF can update company/value/amortization fields';
+    raise exception 'forbidden: only CEO, DAF, or RESPONSABLE can update company/value/amortization fields';
   end if;
 
   if v_status_changed then
