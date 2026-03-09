@@ -83,79 +83,85 @@ export default function MaintenancePage() {
       {error && <div className="alert-error">{error}</div>}
 
       <div className="card">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Actif</th>
-              <th>Titre</th>
-              <th>Coût</th>
-              <th>Priorité</th>
-              <th>Deadline</th>
-              <th className="cell-center">SLA</th>
-              <th>Signalé par</th>
-              <th>Clôturé par</th>
-              <th>Date clôture</th>
-              <th className="cell-center">Statut</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {maintenance.map((m) => (
-              <tr key={m.id}>
-                <td>
-                  {m.asset_id ? (
-                    <Link className="dashboard-link" href={`/assets/${m.asset_id}`}>
-                      {m.assets?.name || "-"}
-                    </Link>
-                  ) : (
-                    m.assets?.name || "-"
-                  )}
-                </td>
-                <td>{m.title}</td>
-                <td>{formatMGA(m.cost)}</td>
-                <td>{m.priority || "-"}</td>
-                <td>
-                  {m.due_date
-                    ? new Date(m.due_date).toLocaleDateString("fr-FR")
-                    : "-"}
-                </td>
-                <td className="cell-center cell-nowrap">
-                  <span className={`sla-badge ${computeMaintenanceSlaStatus(m).toLowerCase()}`}>
-                    {computeMaintenanceSlaStatus(m)}
-                  </span>
-                </td>
-                <td>{getUserLabelById(usersMap, m.reported_by)}</td>
-                <td>{getUserLabelById(usersMap, m.completed_by)}</td>
-                <td>
-                  {m.completed_at
-                    ? new Date(m.completed_at).toLocaleDateString("fr-FR")
-                    : "-"}
-                </td>
-
-                <td className="cell-center cell-nowrap">
-                  {m.is_completed ? (
-                    <span className="badge-success">Terminée</span>
-                  ) : (
-                    <span className="badge-warning">Planifiée</span>
-                  )}
-                </td>
-
-                <td>
-                  {!m.is_completed && canCloseMaintenance && (
-                    <button
-                      className="btn-success"
-                      disabled={loading}
-                      onClick={() => markCompleted(m.id)}
-                    >
-                      Marquer terminée
-                    </button>
-                  )}
-                  {!m.is_completed && !canCloseMaintenance && <span>-</span>}
-                </td>
+        <div className="maintenance-table-wrap">
+          <table className="table maintenance-table">
+            <thead>
+              <tr>
+                <th>Actif</th>
+                <th>Titre</th>
+                <th>Coût</th>
+                <th>Priorité</th>
+                <th>Deadline</th>
+                <th className="cell-center">SLA</th>
+                <th>Signalé par</th>
+                <th>Clôturé par</th>
+                <th>Date clôture</th>
+                <th className="cell-center">Statut</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {maintenance.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    {m.asset_id ? (
+                      <Link className="dashboard-link" href={`/assets/${m.asset_id}`}>
+                        {m.assets?.name || "-"}
+                      </Link>
+                    ) : (
+                      m.assets?.name || "-"
+                    )}
+                  </td>
+                  <td>{m.title}</td>
+                  <td>{formatMGA(m.cost)}</td>
+                  <td>{m.priority || "-"}</td>
+                  <td>
+                    {m.due_date
+                      ? new Date(m.due_date).toLocaleDateString("fr-FR")
+                      : "-"}
+                  </td>
+                  <td className="cell-center cell-nowrap">
+                    <span className={`sla-badge ${computeMaintenanceSlaStatus(m).toLowerCase()}`}>
+                      {computeMaintenanceSlaStatus(m)}
+                    </span>
+                  </td>
+                  <td className="maintenance-cell-user">
+                    {getUserLabelById(usersMap, m.reported_by)}
+                  </td>
+                  <td className="maintenance-cell-user">
+                    {getUserLabelById(usersMap, m.completed_by)}
+                  </td>
+                  <td>
+                    {m.completed_at
+                      ? new Date(m.completed_at).toLocaleDateString("fr-FR")
+                      : "-"}
+                  </td>
+
+                  <td className="cell-center cell-nowrap">
+                    {m.is_completed ? (
+                      <span className="badge-success">Terminée</span>
+                    ) : (
+                      <span className="badge-warning">Planifiée</span>
+                    )}
+                  </td>
+
+                  <td>
+                    {!m.is_completed && canCloseMaintenance && (
+                      <button
+                        className="btn-success"
+                        disabled={loading}
+                        onClick={() => markCompleted(m.id)}
+                      >
+                        Marquer terminée
+                      </button>
+                    )}
+                    {!m.is_completed && !canCloseMaintenance && <span>-</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </Layout>
   );

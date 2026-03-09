@@ -271,6 +271,78 @@ h1 {
   align-items: center;
 }
 
+.maintenance-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.maintenance-table {
+  min-width: 1280px;
+  table-layout: fixed;
+}
+
+.maintenance-table th:nth-child(1),
+.maintenance-table td:nth-child(1) {
+  width: 90px;
+}
+
+.maintenance-table th:nth-child(2),
+.maintenance-table td:nth-child(2) {
+  width: 105px;
+}
+
+.maintenance-table th:nth-child(3),
+.maintenance-table td:nth-child(3) {
+  width: 105px;
+}
+
+.maintenance-table th:nth-child(4),
+.maintenance-table td:nth-child(4) {
+  width: 105px;
+}
+
+.maintenance-table th:nth-child(5),
+.maintenance-table td:nth-child(5) {
+  width: 120px;
+}
+
+.maintenance-table th:nth-child(6),
+.maintenance-table td:nth-child(6) {
+  width: 80px;
+}
+
+.maintenance-table th:nth-child(7),
+.maintenance-table td:nth-child(7),
+.maintenance-table th:nth-child(8),
+.maintenance-table td:nth-child(8) {
+  width: 200px;
+}
+
+.maintenance-table th:nth-child(9),
+.maintenance-table td:nth-child(9) {
+  width: 120px;
+}
+
+.maintenance-table th:nth-child(10),
+.maintenance-table td:nth-child(10) {
+  width: 105px;
+}
+
+.maintenance-table th:nth-child(11),
+.maintenance-table td:nth-child(11) {
+  width: 130px;
+}
+
+.maintenance-cell-user {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.maintenance-table td:last-child .btn-success {
+  white-space: nowrap;
+}
+
 .audit-table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -303,12 +375,12 @@ h1 {
 
 .audit-table th:nth-child(4),
 .audit-table td:nth-child(4) {
-  width: 240px;
+  width: 220px;
 }
 
 .audit-table th:nth-child(5),
 .audit-table td:nth-child(5) {
-  width: 170px;
+  width: auto;
 }
 
 .audit-cell-date {
@@ -335,35 +407,6 @@ h1 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-}
-
-.audit-cell-entity {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.audit-entity-type {
-  text-transform: uppercase;
-  font-size: 11px;
-  color: #475569;
-  font-weight: 700;
-}
-
-.audit-entity-id {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  font-size: 12px;
-  color: #0f172a;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.audit-entity-primary {
-  color: #0f172a;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .audit-table td.audit-cell-asset a {
