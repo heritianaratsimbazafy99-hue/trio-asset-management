@@ -101,8 +101,8 @@ export default function NewAsset() {
     setLoading(true);
 
     try {
-      if (!name || !code || !category || !companyId) {
-        throw new Error("Nom, Code, Catégorie et Société sont obligatoires.");
+      if (!name || !category || !companyId) {
+        throw new Error("Nom, Catégorie et Société sont obligatoires.");
       }
 
       const purchaseVal = purchaseValue ? Number(purchaseValue) : null;
@@ -113,7 +113,7 @@ export default function NewAsset() {
 
       const payload = {
         name,
-        code,
+        code: code.trim() || null,
         category,
         company_id: companyId,
         assigned_to_user_id: assignedToUserId || null,
@@ -208,8 +208,16 @@ export default function NewAsset() {
             </div>
 
             <div className="form-field">
-              <label>Code *</label>
-              <input className="input" value={code} onChange={(e) => setCode(e.target.value)} />
+              <label>Code (optionnel)</label>
+              <input
+                className="input"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="Laisser vide pour génération auto (SOC-CAT-YY-####)"
+              />
+              <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+                Si vide, le code est généré automatiquement avec compteur incrémental.
+              </small>
             </div>
 
             <div className="form-field">
