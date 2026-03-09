@@ -18,6 +18,10 @@ import {
   FIXED_ASSET_CATEGORIES,
   getAssetCategoryLabel,
 } from "../../lib/assetCategories";
+import {
+  ASSET_CONDITIONS,
+  getAssetConditionLabel,
+} from "../../lib/assetConditions";
 
 function normalizeSearchTerm(term) {
   return String(term || "").trim();
@@ -29,6 +33,18 @@ function isMissingRpcSignatureError(error) {
     message.includes("search_assets_secure") &&
     (message.includes("does not exist") || message.includes("could not find the function"))
   );
+}
+
+async function runSearchAssetsRpc(params) {
+  let response = await supabase.rpc("search_assets_secure", params);
+  if (!response.error || !isMissingRpcSignatureError(response.error)) return response;
+
+  const { p_condition, ...withoutCondition } = params;
+  response = await supabase.rpc("search_assets_secure", withoutCondition);
+  if (!response.error || !isMissingRpcSignatureError(response.error)) return response;
+
+  const { p_category, ...legacyWithoutCategory } = withoutCondition;
+  return supabase.rpc("search_assets_secure", legacyWithoutCategory);
 }
 
 function getAssignedDisplayLabel(asset, assignedUsersMap) {
@@ -54,6 +70,7 @@ export default function AssetsPage() {
   const [companies, setCompanies] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedCondition, setSelectedCondition] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -79,6 +96,7 @@ export default function AssetsPage() {
   }, [
     selectedCompanyId,
     selectedCategory,
+    selectedCondition,
     searchTerm,
     page,
     pageSize,
@@ -105,19 +123,15 @@ export default function AssetsPage() {
       p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
       p_search: term || null,
       p_category: selectedCategory === "ALL" ? null : selectedCategory,
+      p_condition: selectedCondition === "ALL" ? null : selectedCondition,
       p_limit: pageSize,
       p_offset: from,
       p_sort_by: sortBy,
       p_sort_direction: sortDirection,
     };
-    let { data, error: queryError } = await supabase.rpc("search_assets_secure", params);
-
-    if (queryError && isMissingRpcSignatureError(queryError)) {
-      const { p_category, ...legacyParams } = params;
-      const legacyResponse = await supabase.rpc("search_assets_secure", legacyParams);
-      data = legacyResponse.data;
-      queryError = legacyResponse.error;
-    }
+    const queryResponse = await runSearchAssetsRpc(params);
+    const data = queryResponse.data;
+    const queryError = queryResponse.error;
 
     if (queryError) {
       setError(queryError.message);
@@ -161,19 +175,16 @@ export default function AssetsPage() {
         p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
         p_search: term || null,
         p_category: selectedCategory === "ALL" ? null : selectedCategory,
+        p_condition: selectedCondition === "ALL" ? null : selectedCondition,
         p_limit: batchSize,
         p_offset: offset,
         p_sort_by: sortBy,
         p_sort_direction: sortDirection,
       };
 
-      let { data, error: batchError } = await supabase.rpc("search_assets_secure", params);
-      if (batchError && isMissingRpcSignatureError(batchError)) {
-        const { p_category, ...legacyParams } = params;
-        const legacyResponse = await supabase.rpc("search_assets_secure", legacyParams);
-        data = legacyResponse.data;
-        batchError = legacyResponse.error;
-      }
+      const batchResponse = await runSearchAssetsRpc(params);
+      const data = batchResponse.data;
+      const batchError = batchResponse.error;
 
       if (batchError) {
         setError(batchError.message);
@@ -197,6 +208,7 @@ export default function AssetsPage() {
       "Nom",
       "Société",
       "Catégorie",
+      "Etat actuel",
       "Valeur",
       "Statut",
       "Attribué à",
@@ -209,6 +221,7 @@ export default function AssetsPage() {
       item.name,
       item.organisations?.name || "",
       getAssetCategoryLabel(item.category),
+      getAssetConditionLabel(item.current_condition),
       Number(item.purchase_value ?? item.value ?? 0).toFixed(2),
       item.status || "",
       getAssignedDisplayLabel(item, map),
@@ -276,6 +289,11 @@ export default function AssetsPage() {
     setPage(1);
   }
 
+  function handleConditionFilterChange(value) {
+    setSelectedCondition(value);
+    setPage(1);
+  }
+
   const totals = useMemo(() => {
     return assets.reduce((sum, a) => sum + Number(a.purchase_value || a.value || 0), 0);
   }, [assets]);
@@ -292,7 +310,7 @@ export default function AssetsPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto auto",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr auto auto",
             gap: 12,
           }}
         >
@@ -323,6 +341,19 @@ export default function AssetsPage() {
           >
             <option value="ALL">Toutes les catégories</option>
             {FIXED_ASSET_CATEGORIES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="select"
+            value={selectedCondition}
+            onChange={(e) => handleConditionFilterChange(e.target.value)}
+          >
+            <option value="ALL">Tous les états</option>
+            {ASSET_CONDITIONS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -394,6 +425,7 @@ export default function AssetsPage() {
                   <th>Nom</th>
                   <th>Société</th>
                   <th>Catégorie</th>
+                  <th>Etat actuel</th>
                   <th>Valeur</th>
                   <th>Statut</th>
                   <th>Attribué à</th>
@@ -411,6 +443,7 @@ export default function AssetsPage() {
                     </td>
                     <td>{asset.organisations?.name || "-"}</td>
                     <td>{getAssetCategoryLabel(asset.category)}</td>
+                    <td>{getAssetConditionLabel(asset.current_condition)}</td>
                     <td>{formatMGA(asset.purchase_value || asset.value)}</td>
                     <td><StatusBadge status={asset.status} /></td>
                     <td>{getAssignedDisplayLabel(asset, assignedUsersMap)}</td>
@@ -436,7 +469,7 @@ export default function AssetsPage() {
 
                 {assets.length === 0 && (
                   <tr>
-                    <td colSpan={7}>Aucun actif correspondant.</td>
+                    <td colSpan={8}>Aucun actif correspondant.</td>
                   </tr>
                 )}
               </tbody>

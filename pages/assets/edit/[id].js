@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Layout from "../../../components/Layout";
 import supabase from "../../../lib/supabaseClient";
 import { FIXED_ASSET_CATEGORIES } from "../../../lib/assetCategories";
+import { ASSET_CONDITIONS } from "../../../lib/assetConditions";
 
 export default function EditAsset() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function EditAsset() {
     code: "",
     name: "",
     category: "",
+    current_condition: "BON",
     value: "",
     status: "EN_SERVICE",
     description: "",
@@ -57,6 +59,7 @@ export default function EditAsset() {
       code: data.code || "",
       name: data.name || "",
       category: data.category || "",
+      current_condition: data.current_condition || "BON",
       value: data.value ?? "",
       status: data.status || "EN_SERVICE",
       description: data.description || "",
@@ -79,6 +82,7 @@ export default function EditAsset() {
         code: form.code,
         name: form.name,
         category: form.category,
+        current_condition: form.current_condition || null,
         value: form.value ? Number(form.value) : null,
         status: form.status,
         description: form.description,
@@ -145,6 +149,21 @@ export default function EditAsset() {
               </option>
             )}
             {FIXED_ASSET_CATEGORIES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Etat actuel</label>
+          <select
+            name="current_condition"
+            value={form.current_condition}
+            onChange={handleChange}
+          >
+            {ASSET_CONDITIONS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>

@@ -7,11 +7,13 @@ create extension if not exists pg_trgm;
 -- 1) Search RPC for assets (replaces dynamic .or(...) client strings)
 -- =====================================================================
 drop function if exists public.search_assets_secure(uuid, text, integer, integer, text, text);
+drop function if exists public.search_assets_secure(uuid, text, text, integer, integer, text, text);
 
 create or replace function public.search_assets_secure(
   p_company_id uuid default null,
   p_search text default null,
   p_category text default null,
+  p_condition text default null,
   p_limit integer default 20,
   p_offset integer default 0,
   p_sort_by text default 'created_at',
@@ -22,6 +24,7 @@ returns table (
   code text,
   name text,
   category text,
+  current_condition text,
   purchase_date date,
   purchase_value numeric,
   value numeric,
@@ -72,6 +75,7 @@ begin
           a.code,
           a.name,
           a.category,
+          a.current_condition,
           a.purchase_date,
           a.purchase_value,
           a.value,
@@ -92,16 +96,23 @@ begin
           )
           and (
             $3::text is null
-            or a.name ilike $3
-            or coalesce(a.code, '') ilike $3
-            or coalesce(a.assigned_to_name, '') ilike $3
+            or upper($3::text) = 'ALL'
+            or coalesce(a.current_condition, '') = $3
+          )
+          and (
+            $4::text is null
+            or a.name ilike $4
+            or coalesce(a.code, '') ilike $4
+            or coalesce(a.category, '') ilike $4
+            or coalesce(a.current_condition, '') ilike $4
+            or coalesce(a.assigned_to_name, '') ilike $4
             or exists (
               select 1
               from public.user_directory ud
               where ud.id = a.assigned_to_user_id
                 and (
-                  coalesce(ud.full_name, '') ilike $3
-                  or coalesce(ud.email, '') ilike $3
+                  coalesce(ud.full_name, '') ilike $4
+                  or coalesce(ud.email, '') ilike $4
                 )
             )
           )
@@ -109,18 +120,18 @@ begin
       select *
       from filtered
       order by %s %s nulls last, id asc
-      limit $4
-      offset $5
+      limit $5
+      offset $6
     $sql$,
     v_sort_sql,
     v_dir_sql
   )
-  using p_company_id, nullif(btrim(coalesce(p_category, '')), ''), v_pattern, v_limit, v_offset;
+  using p_company_id, nullif(btrim(coalesce(p_category, '')), ''), nullif(btrim(coalesce(p_condition, '')), ''), v_pattern, v_limit, v_offset;
 end;
 $$;
 
-revoke all on function public.search_assets_secure(uuid, text, text, integer, integer, text, text) from public;
-grant execute on function public.search_assets_secure(uuid, text, text, integer, integer, text, text) to authenticated;
+revoke all on function public.search_assets_secure(uuid, text, text, text, integer, integer, text, text) from public;
+grant execute on function public.search_assets_secure(uuid, text, text, text, integer, integer, text, text) to authenticated;
 
 -- =====================================================================
 -- 2) Search RPC for audit logs (server-side search + pagination)
@@ -640,7 +651,7 @@ create index if not exists idx_maintenance_due_status on public.maintenance (due
 -- =====================================================================
 -- 6) Quick checks
 -- =====================================================================
--- select * from public.search_assets_secure(null, 'serveur', null, 20, 0, 'created_at', 'desc');
+-- select * from public.search_assets_secure(null, 'serveur', null, null, 20, 0, 'created_at', 'desc');
 -- select * from public.search_audit_logs_secure('ALL', 'incident', 20, 0);
 -- select * from public.list_asset_categories(null);
 -- select public.dashboard_summary(null, 'ALL', '12M', 1, 12);

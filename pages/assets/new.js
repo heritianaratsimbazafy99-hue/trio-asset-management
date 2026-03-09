@@ -12,6 +12,7 @@ import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryList } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
 import { FIXED_ASSET_CATEGORIES } from "../../lib/assetCategories";
+import { ASSET_CONDITIONS } from "../../lib/assetConditions";
 
 export default function NewAsset() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function NewAsset() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [category, setCategory] = useState("");
+  const [currentCondition, setCurrentCondition] = useState("BON");
   const [purchaseDate, setPurchaseDate] = useState("");
   const [purchaseValue, setPurchaseValue] = useState("");
   const [status, setStatus] = useState("EN_SERVICE");
@@ -115,6 +117,7 @@ export default function NewAsset() {
         name,
         code: code.trim() || null,
         category,
+        current_condition: currentCondition || null,
         company_id: companyId,
         assigned_to_user_id: assignedToUserId || null,
         assigned_to_name: assignedToName.trim() || null,
@@ -170,6 +173,8 @@ export default function NewAsset() {
             fileName: uploaded.fileName,
             path: uploaded.path,
             publicUrl: uploaded.publicUrl,
+            thumbnailPath: uploaded.thumbnailPath,
+            thumbnailUrl: uploaded.thumbnailUrl,
           });
         } catch (attachmentError) {
           setWarning(
@@ -230,6 +235,22 @@ export default function NewAsset() {
               >
                 <option value="">Sélectionner une catégorie</option>
                 {FIXED_ASSET_CATEGORIES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label>Etat actuel *</label>
+              <select
+                className="select"
+                value={currentCondition}
+                onChange={(e) => setCurrentCondition(e.target.value)}
+                required
+              >
+                {ASSET_CONDITIONS.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
                   </option>
@@ -333,6 +354,9 @@ export default function NewAsset() {
                 type="file"
                 onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
               />
+              <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+                Taille max: 10 MB. Les images sont converties en WebP + miniature avant envoi.
+              </small>
             </div>
 
           </div>
