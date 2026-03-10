@@ -11,24 +11,37 @@ const REQUIRED_FILES = [
   "pages/assets/[id]/journal.js",
   "lib/assetImport.js",
   "lib/dataHealth.js",
+  "lib/emailNotifications.js",
   "lib/attachmentService.js",
   "lib/notifications.js",
   "lib/replacementPlanner.js",
   "lib/ruleEngine.js",
+  "lib/supabaseAdmin.js",
   "lib/userDirectory.js",
   "lib/workflowRequests.js",
+  "pages/api/notifications/email-dispatch.js",
   "pages/notifications/index.js",
   "pages/replacement-plan/index.js",
   "pages/rules/index.js",
   "docs/CONTEXT_REPRISE_2026-03-10.md",
   "docs/SQL_RUNBOOK_2026-03-10.md",
   "docs/SQL_CATALOG_2026-03-10.md",
+  "sql/feature_email_notifications.sql",
   "sql/sql_manifest_2026-03-10.json",
+  "vercel.json",
 ];
 
 const REQUIRED_ENV_KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+];
+
+const EMAIL_ENV_KEYS = [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+  "APP_BASE_URL",
+  "CRON_SECRET",
 ];
 
 const SQL_MANIFEST_PATH = "sql/sql_manifest_2026-03-10.json";
@@ -145,6 +158,7 @@ async function validateSqlConsolidation() {
         "sql/feature_audit_assignment_history.sql",
         "sql/assignment_update_ceo_daf_and_history_names.sql",
       ],
+      ["sql/feature_app_notifications.sql", "sql/feature_email_notifications.sql"],
       ["sql/assignment_update_ceo_daf_and_history_names.sql", "sql/feature_asset_bulk_import.sql"],
       [
         "sql/hotfix_asset_current_condition.sql",
@@ -215,6 +229,12 @@ async function run() {
     const ok = Boolean(process.env[key]);
     console.log(`${ok ? "OK" : "MISSING"} ${key}`);
     if (!ok) hasError = true;
+  }
+
+  printSection("EMAIL ENV");
+  for (const key of EMAIL_ENV_KEYS) {
+    const ok = Boolean(process.env[key]);
+    console.log(`${ok ? "OK" : "WARN"} ${key}`);
   }
 
   printSection("RESULT");

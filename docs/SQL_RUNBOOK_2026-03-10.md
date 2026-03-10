@@ -34,15 +34,17 @@ Exécuter les scripts dans cet ordre:
 15. `sql/feature_company_rules_engine.sql`
 16. `sql/feature_data_health_actions.sql`
 17. `sql/feature_app_notifications.sql`
-18. `sql/hotfix_asset_vehicle_details.sql`
-19. `sql/hotfix_asset_code_autogenerate.sql`
-20. `sql/feature_asset_bulk_import.sql`
-21. `sql/step_3_post_migration_checks.sql`
+18. `sql/feature_email_notifications.sql`
+19. `sql/hotfix_asset_vehicle_details.sql`
+20. `sql/hotfix_asset_code_autogenerate.sql`
+21. `sql/feature_asset_bulk_import.sql`
+22. `sql/step_3_post_migration_checks.sql`
 
 Pourquoi ces ajouts sont canoniques:
 
 - `sql/assignment_update_ceo_daf_and_history_names.sql` rend l'assignation libre cohérente avec l'état actuel de l'application et avec `sql/feature_asset_bulk_import.sql`.
 - `sql/hotfix_asset_current_condition.sql` doit passer avant `sql/hotfix_2026_03_04_assets_search_and_user_labels.sql`, car la recherche sécurisée utilise déjà `current_condition`.
+- `sql/feature_email_notifications.sql` ajoute la queue email, le dispatch transactionnel et les alertes incident au-dessus des notifications applicatives existantes.
 - `sql/hotfix_asset_vehicle_details.sql` et `sql/hotfix_asset_code_autogenerate.sql` sont nécessaires avant `sql/feature_asset_bulk_import.sql`.
 
 ## 2. Scripts supersédés ou ciblés
@@ -81,7 +83,8 @@ Hypothèse:
 
 Exécuter uniquement:
 
-1. `sql/step_3_post_migration_checks.sql`
+1. `sql/feature_email_notifications.sql`
+2. `sql/step_3_post_migration_checks.sql`
 
 ### Cas B - prod déjà alignée jusqu'au lot 5
 
@@ -89,11 +92,12 @@ Exécuter uniquement:
 
 1. `sql/feature_data_health_actions.sql`
 2. `sql/feature_app_notifications.sql`
-3. `sql/hotfix_asset_current_condition.sql`
-4. `sql/hotfix_asset_vehicle_details.sql`
-5. `sql/hotfix_asset_code_autogenerate.sql`
-6. `sql/feature_asset_bulk_import.sql`
-7. `sql/step_3_post_migration_checks.sql`
+3. `sql/feature_email_notifications.sql`
+4. `sql/hotfix_asset_current_condition.sql`
+5. `sql/hotfix_asset_vehicle_details.sql`
+6. `sql/hotfix_asset_code_autogenerate.sql`
+7. `sql/feature_asset_bulk_import.sql`
+8. `sql/step_3_post_migration_checks.sql`
 
 ### Cas C - prod a déjà reçu l'ancien lot 2
 
@@ -104,11 +108,12 @@ Exécuter dans cet ordre:
 3. `sql/feature_company_rules_engine.sql`
 4. `sql/feature_data_health_actions.sql`
 5. `sql/feature_app_notifications.sql`
-6. `sql/hotfix_asset_current_condition.sql`
-7. `sql/hotfix_asset_vehicle_details.sql`
-8. `sql/hotfix_asset_code_autogenerate.sql`
-9. `sql/feature_asset_bulk_import.sql`
-10. `sql/step_3_post_migration_checks.sql`
+6. `sql/feature_email_notifications.sql`
+7. `sql/hotfix_asset_current_condition.sql`
+8. `sql/hotfix_asset_vehicle_details.sql`
+9. `sql/hotfix_asset_code_autogenerate.sql`
+10. `sql/feature_asset_bulk_import.sql`
+11. `sql/step_3_post_migration_checks.sql`
 
 ### Cas D - prod a la base sécurité/dashboard mais pas les lots fonctionnels
 
@@ -122,11 +127,12 @@ Exécuter:
 6. `sql/feature_company_rules_engine.sql`
 7. `sql/feature_data_health_actions.sql`
 8. `sql/feature_app_notifications.sql`
-9. `sql/hotfix_asset_current_condition.sql`
-10. `sql/hotfix_asset_vehicle_details.sql`
-11. `sql/hotfix_asset_code_autogenerate.sql`
-12. `sql/feature_asset_bulk_import.sql`
-13. `sql/step_3_post_migration_checks.sql`
+9. `sql/feature_email_notifications.sql`
+10. `sql/hotfix_asset_current_condition.sql`
+11. `sql/hotfix_asset_vehicle_details.sql`
+12. `sql/hotfix_asset_code_autogenerate.sql`
+13. `sql/feature_asset_bulk_import.sql`
+14. `sql/step_3_post_migration_checks.sql`
 
 ## 4. Tester une fonction sécurisée dans SQL Editor
 
@@ -218,6 +224,11 @@ select *
 from public.list_notifications_secure('ALL', 20, 0);
 
 select *
+from public.email_notification_queue
+order by created_at desc
+limit 20;
+
+select *
 from public.bulk_import_assets(
   jsonb_build_array(
     jsonb_build_object(
@@ -234,6 +245,15 @@ from public.bulk_import_assets(
   true
 );
 ```
+
+Pour tester le dispatch email via l'application serveur:
+
+- configurer `SUPABASE_SERVICE_ROLE_KEY`
+- configurer `RESEND_API_KEY`
+- configurer `EMAIL_FROM`
+- configurer `APP_BASE_URL`
+- configurer `CRON_SECRET`
+- le cron Vercel appelle `/api/notifications/email-dispatch`
 
 Puis vérifier côté application:
 

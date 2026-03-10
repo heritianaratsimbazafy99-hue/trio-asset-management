@@ -32,10 +32,11 @@ Le chemin canonique correspond a la liste `catalog.canonical` du manifeste.
 | 15 | `sql/feature_company_rules_engine.sql` | Moteur de regles par societe |
 | 16 | `sql/feature_data_health_actions.sql` | Sante des donnees actionnable |
 | 17 | `sql/feature_app_notifications.sql` | Notifications applicatives |
-| 18 | `sql/hotfix_asset_vehicle_details.sql` | Colonne `vehicle_details` |
-| 19 | `sql/hotfix_asset_code_autogenerate.sql` | Generation automatique des codes actif |
-| 20 | `sql/feature_asset_bulk_import.sql` | Import massif CSV/XLSX avec dry-run |
-| 21 | `sql/step_3_post_migration_checks.sql` | Controles finaux post-migration |
+| 18 | `sql/feature_email_notifications.sql` | Queue email transactionnelle, alertes incident et retry |
+| 19 | `sql/hotfix_asset_vehicle_details.sql` | Colonne `vehicle_details` |
+| 20 | `sql/hotfix_asset_code_autogenerate.sql` | Generation automatique des codes actif |
+| 21 | `sql/feature_asset_bulk_import.sql` | Import massif CSV/XLSX avec dry-run |
+| 22 | `sql/step_3_post_migration_checks.sql` | Controles finaux post-migration |
 
 ## 2. Scripts supersedes
 
@@ -64,6 +65,10 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
 - Le manifeste `sql/sql_manifest_2026-03-10.json` fait foi pour la classification.
 - Le runbook `docs/SQL_RUNBOOK_2026-03-10.md` fait foi pour l'ordre d'execution.
 - Toute nouvelle migration SQL doit etre ajoutee au manifeste, puis documentee dans le runbook et ce catalogue.
+- `sql/feature_email_notifications.sql` depend explicitement de:
+  - `sql/feature_app_notifications.sql`
+  - `sql/feature_audit_assignment_history.sql`
+  - `sql/step_1_security_integrity_hardening.sql`
 - `sql/feature_asset_bulk_import.sql` depend explicitement de:
   - `sql/assignment_update_ceo_daf_and_history_names.sql`
   - `sql/hotfix_asset_current_condition.sql`

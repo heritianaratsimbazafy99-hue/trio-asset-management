@@ -23,6 +23,7 @@
       "sql/feature_company_rules_engine.sql",
       "sql/feature_data_health_actions.sql",
       "sql/feature_app_notifications.sql",
+      "sql/feature_email_notifications.sql",
       "sql/hotfix_asset_vehicle_details.sql",
       "sql/hotfix_asset_code_autogenerate.sql",
       "sql/feature_asset_bulk_import.sql",
@@ -103,6 +104,7 @@
       "sql/feature_company_rules_engine.sql",
       "sql/feature_data_health_actions.sql",
       "sql/feature_app_notifications.sql",
+      "sql/feature_email_notifications.sql",
       "sql/hotfix_asset_vehicle_details.sql",
       "sql/hotfix_asset_code_autogenerate.sql",
       "sql/feature_asset_bulk_import.sql",
@@ -110,11 +112,13 @@
     ],
     "prodCatchUp": {
       "alignedThroughLot8": [
+        "sql/feature_email_notifications.sql",
         "sql/step_3_post_migration_checks.sql"
       ],
       "alignedThroughLot5": [
         "sql/feature_data_health_actions.sql",
         "sql/feature_app_notifications.sql",
+        "sql/feature_email_notifications.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
         "sql/hotfix_asset_code_autogenerate.sql",
@@ -127,6 +131,7 @@
         "sql/feature_company_rules_engine.sql",
         "sql/feature_data_health_actions.sql",
         "sql/feature_app_notifications.sql",
+        "sql/feature_email_notifications.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
         "sql/hotfix_asset_code_autogenerate.sql",
@@ -142,6 +147,7 @@
         "sql/feature_company_rules_engine.sql",
         "sql/feature_data_health_actions.sql",
         "sql/feature_app_notifications.sql",
+        "sql/feature_email_notifications.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
         "sql/hotfix_asset_code_autogenerate.sql",

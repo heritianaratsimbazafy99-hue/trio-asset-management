@@ -4,7 +4,7 @@ Date de mise à jour: 2026-03-10
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 9 sont implémentés côté code ou documentation d'exploitation:
+Les lots 1 à 10 sont implémentés côté code ou documentation d'exploitation:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -15,6 +15,7 @@ Les lots 1 à 9 sont implémentés côté code ou documentation d'exploitation:
 7. Notifications applicatives pour les workflows avec centre de notifications dans l'application
 8. Import massif Excel / CSV avec dry-run de validation avant écriture
 9. Consolidation technique SQL avec manifeste canonique, catalogue de scripts et runbook unique
+10. Notifications email transactionnelles avec queue, dispatch serveur et alerte incident
 
 ## Règles métier en vigueur
 
@@ -43,6 +44,10 @@ Les lots 1 à 9 sont implémentés côté code ou documentation d'exploitation:
 - Un manifeste SQL versionné et un catalogue de scripts sont maintenus dans:
   - `sql/sql_manifest_2026-03-10.json`
   - `docs/SQL_CATALOG_2026-03-10.md`
+- Le lot 10 ajoute:
+  - une queue `email_notification_queue`
+  - un dispatch email via API route sécurisée
+  - une alerte incident qui déclenche notification applicative + email
 
 ## SQL de référence
 
@@ -73,17 +78,22 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ma
   - `request_asset_rebus`
   - `approve_workflow_request`
   - `reject_workflow_request`
+- Les notifications dépendent désormais de:
+  - `notifications`
+  - `email_notification_queue`
+  - `claim_email_notification_batch`
+  - `/api/notifications/email-dispatch`
 
 ## Prochain chantier prioritaire
 
-Le prochain lot à coder est:
+Le prochain lot à cadrer est:
 
-10. Notifications email éventuelles
+11. Préférences email et supervision d'envoi
 
 Objectif:
-- compléter les notifications applicatives par un canal email
-- cibler les approbateurs et les demandeurs sur les événements critiques
+- permettre l'opt-in / opt-out par type d'email
+- exposer un suivi des envois et des échecs côté administration
 
-## Backlog restant après le lot 9
+## Backlog restant après le lot 10
 
-- Notifications email éventuelles
+- Préférences email et supervision d'envoi

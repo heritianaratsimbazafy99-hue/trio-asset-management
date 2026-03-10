@@ -21,6 +21,8 @@ const ACTION_OPTIONS = [
   "WORKFLOW_REQUEST_FAILED",
   "DATA_HEALTH_FIX",
   "ASSET_IMPORT_BATCH",
+  "EMAIL_NOTIFICATION_SENT",
+  "EMAIL_NOTIFICATION_FAILED",
 ];
 
 const ACTION_LABELS = {
@@ -39,6 +41,8 @@ const ACTION_LABELS = {
   WORKFLOW_REQUEST_FAILED: "Demande en échec",
   DATA_HEALTH_FIX: "Correction santé des données",
   ASSET_IMPORT_BATCH: "Import massif d'actifs",
+  EMAIL_NOTIFICATION_SENT: "Email envoyé",
+  EMAIL_NOTIFICATION_FAILED: "Échec d'envoi email",
 };
 
 function formatDate(value) {
