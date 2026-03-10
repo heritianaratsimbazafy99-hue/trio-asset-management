@@ -20,6 +20,7 @@ import {
 } from "../../lib/attachmentService";
 import { groupMaintenanceByMonth } from "../../lib/financeEngine";
 import { evaluateAssetHealth } from "../../lib/predictiveEngine";
+import { evaluateAssetRules } from "../../lib/ruleEngine";
 import {
   fetchUserDirectoryList,
   fetchUserDirectoryMapByIds,
@@ -94,6 +95,13 @@ const VEHICLE_STATUS_LABEL_BY_VALUE = VEHICLE_STATUS_OPTIONS.reduce((acc, item) 
   return acc;
 }, {});
 
+function getRuleSeverityClassName(severity) {
+  const normalized = String(severity || "").toUpperCase();
+  if (normalized === "CRITICAL") return "badge-danger";
+  if (normalized === "WARNING") return "badge-warning";
+  return "badge-success";
+}
+
 export default function AssetDetailPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -106,6 +114,7 @@ export default function AssetDetailPage() {
   const [attachmentError, setAttachmentError] = useState("");
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [scoringConfig, setScoringConfig] = useState(null);
+  const [companyRules, setCompanyRules] = useState([]);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [usersMap, setUsersMap] = useState({});
@@ -153,19 +162,27 @@ export default function AssetDetailPage() {
     ]);
 
     const attachmentData = await fetchAssetAttachments(assetId);
-    const { data: scoreConfigData } = assetData?.company_id
-      ? await supabase
-          .from("company_scoring_config")
-          .select("*")
-          .eq("company_id", assetData.company_id)
-          .single()
-      : { data: null };
+    const [{ data: scoreConfigData }, { data: companyRulesData }] = assetData?.company_id
+      ? await Promise.all([
+          supabase
+            .from("company_scoring_config")
+            .select("*")
+            .eq("company_id", assetData.company_id)
+            .single(),
+          supabase
+            .from("company_rule_configs")
+            .select("*")
+            .eq("company_id", assetData.company_id)
+            .order("scope", { ascending: true }),
+        ])
+      : [{ data: null }, { data: [] }];
 
     setAsset(assetData);
     setIncidents(incidentsData || []);
     setMaintenance(maintenanceData || []);
     setAttachments(attachmentData || []);
     setScoringConfig(scoreConfigData || null);
+    setCompanyRules(companyRulesData || []);
     setAssignmentHistory(assignmentHistoryData || []);
     setUserOptions(usersList || []);
     setAssignToUserId(assetData?.assigned_to_user_id || "");
@@ -238,6 +255,17 @@ export default function AssetDetailPage() {
   const maintenanceTrend = useMemo(
     () => groupMaintenanceByMonth(maintenance, 12),
     [maintenance]
+  );
+  const triggeredAssetRules = useMemo(
+    () =>
+      evaluateAssetRules({
+        asset,
+        incidents,
+        maintenance,
+        scoringConfig,
+        rules: companyRules,
+      }),
+    [asset, incidents, maintenance, scoringConfig, companyRules]
   );
   const canManageAssignment = hasOneRole(userRole, [
     APP_ROLES.CEO,
@@ -674,6 +702,38 @@ export default function AssetDetailPage() {
             {analysis.alerts.map((item) => (
               <div key={item}>- {item}</div>
             ))}
+          </div>
+        )}
+        {triggeredAssetRules.length > 0 && (
+          <div className="card" style={{ marginTop: 14, padding: 12 }}>
+            <h4 style={{ marginBottom: 8 }}>Règles métier déclenchées</h4>
+            <div style={{ display: "grid", gap: 8 }}>
+              {triggeredAssetRules.map((rule) => (
+                <div
+                  key={rule.rule_code}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    borderBottom: "1px solid #e7ecf3",
+                    paddingBottom: 8,
+                  }}
+                >
+                  <div>
+                    <strong>{rule.rule_name}</strong>
+                    <div style={{ color: "#5f6f83", marginTop: 4 }}>{rule.details}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span>{rule.comparator} {rule.thresholdLabel}</span>
+                    <span className={getRuleSeverityClassName(rule.severity)}>
+                      {rule.severity}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         {statusMessage && (
