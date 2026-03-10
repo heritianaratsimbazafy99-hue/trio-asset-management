@@ -22,6 +22,23 @@ const ACTION_OPTIONS = [
   "DATA_HEALTH_FIX",
 ];
 
+const ACTION_LABELS = {
+  ALL: "Toutes les actions",
+  ASSET_DELETE_DIRECT: "Suppression directe d'actif",
+  ASSET_DELETE: "Suppression d'actif",
+  INCIDENT_CLOSE: "Clôture d'incident",
+  MAINTENANCE_CLOSE: "Clôture de maintenance",
+  ASSET_ASSIGNMENT_INITIAL: "Attribution initiale",
+  ASSET_ASSIGNMENT_CHANGE: "Changement d'attribution",
+  ASSET_PURCHASE_VALUE_UPDATE: "Mise à jour directe de la valeur d'achat",
+  WORKFLOW_REQUEST_CREATED: "Demande de validation créée",
+  WORKFLOW_REQUEST_APPROVAL_RECORDED: "Décision de validation enregistrée",
+  WORKFLOW_REQUEST_APPLIED: "Demande appliquée",
+  WORKFLOW_REQUEST_REJECTED: "Demande rejetée",
+  WORKFLOW_REQUEST_FAILED: "Demande en échec",
+  DATA_HEALTH_FIX: "Correction santé des données",
+};
+
 function formatDate(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("fr-FR");
@@ -29,7 +46,7 @@ function formatDate(value) {
 
 function formatActionLabel(action) {
   if (!action) return "-";
-  return String(action).replaceAll("_", " ");
+  return ACTION_LABELS[action] || String(action).replaceAll("_", " ");
 }
 
 function normalizePayloadValue(value) {
@@ -168,7 +185,7 @@ export default function AuditLogsPage() {
           >
             {ACTION_OPTIONS.map((item) => (
               <option key={item} value={item}>
-                {item === "ALL" ? "Toutes les actions" : item}
+                {formatActionLabel(item)}
               </option>
             ))}
           </select>

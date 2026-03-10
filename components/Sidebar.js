@@ -35,6 +35,7 @@ function getActiveSection(pathname = "") {
   if (pathname === "/assets") return "assets";
   if (pathname === "/incidents") return "incidents";
   if (pathname === "/maintenance") return "maintenance";
+  if (pathname === "/notifications") return "notifications";
   if (pathname === "/replacement-plan") return "replacement-plan";
   if (pathname === "/rules") return "rules";
   if (pathname === "/approvals") return "approvals";
@@ -48,6 +49,7 @@ export default function Sidebar() {
     assets: 0,
     incidents: 0,
     maintenance: 0,
+    notifications: 0,
   });
   const [userRole, setUserRole] = useState("");
 
@@ -62,11 +64,22 @@ export default function Sidebar() {
     fetchCounts(cached?.counts, cached?.userRole);
   }, [router.pathname]);
 
+  useEffect(() => {
+    function handleRefresh() {
+      const cached = readSidebarCache();
+      fetchCounts(cached?.counts, cached?.userRole);
+    }
+
+    window.addEventListener("trio-sidebar-refresh", handleRefresh);
+    return () => window.removeEventListener("trio-sidebar-refresh", handleRefresh);
+  }, [router.pathname]);
+
   async function fetchCounts(previousCounts, previousRole) {
     const fallbackCounts = {
       assets: previousCounts?.assets ?? 0,
       incidents: previousCounts?.incidents ?? 0,
       maintenance: previousCounts?.maintenance ?? 0,
+      notifications: previousCounts?.notifications ?? 0,
     };
     const activeSection = getActiveSection(router.pathname);
 
@@ -74,6 +87,7 @@ export default function Sidebar() {
       { count: assetCount },
       { count: incidentCount },
       { count: maintenanceCount },
+      notificationsResponse,
       { profile },
     ] = await Promise.all([
       activeSection === "assets"
@@ -85,6 +99,9 @@ export default function Sidebar() {
       activeSection === "maintenance"
         ? Promise.resolve({ count: fallbackCounts.maintenance })
         : supabase.from("maintenance").select("id", { count: "exact", head: true }),
+      activeSection === "notifications"
+        ? Promise.resolve({ data: fallbackCounts.notifications })
+        : supabase.rpc("get_unread_notifications_count"),
       getCurrentUserProfile(),
     ]);
 
@@ -92,6 +109,7 @@ export default function Sidebar() {
       assets: assetCount || 0,
       incidents: incidentCount || 0,
       maintenance: maintenanceCount || 0,
+      notifications: Number(notificationsResponse?.data || 0),
     };
     const nextRole = profile?.role || previousRole || "";
 
@@ -114,13 +132,14 @@ export default function Sidebar() {
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", count: null },
+    { path: "/notifications", label: "Notifications", count: counts.notifications },
     { path: "/assets", label: "Immobilisations", count: counts.assets },
     { path: "/incidents", label: "Incidents", count: counts.incidents },
     { path: "/maintenance", label: "Maintenance", count: counts.maintenance },
     { path: "/replacement-plan", label: "Remplacement", count: null },
     ...(canSeeAdmin ? [{ path: "/rules", label: "Règles", count: null }] : []),
-    ...(canSeeApprovals ? [{ path: "/approvals", label: "Approvals", count: null }] : []),
-    ...(canSeeAudit ? [{ path: "/audit-logs", label: "Audit Logs", count: null }] : []),
+    ...(canSeeApprovals ? [{ path: "/approvals", label: "Validations", count: null }] : []),
+    ...(canSeeAudit ? [{ path: "/audit-logs", label: "Journal d'audit", count: null }] : []),
     ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", count: null }] : []),
   ];
 

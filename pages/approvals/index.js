@@ -118,7 +118,7 @@ export default function ApprovalsPage() {
 
   return (
     <Layout>
-      <h1>Approvals</h1>
+      <h1>Validations</h1>
       <p style={{ marginBottom: 12 }}>Rôle connecté: {userRole || "-"}</p>
       <div className="alert-warning" style={{ marginBottom: 12 }}>
         Cette page affiche vos demandes et, selon votre rôle, les validations que vous pouvez traiter.
