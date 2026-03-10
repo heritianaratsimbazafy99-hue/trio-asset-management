@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
 import { computeMaintenanceSlaStatus } from "../../lib/sla";
@@ -40,6 +41,7 @@ function getMaintenanceStatusClassName(item) {
 }
 
 export default function MaintenancePage() {
+  const router = useRouter();
   const [maintenance, setMaintenance] = useState([]);
   const [replacementAssets, setReplacementAssets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -206,7 +208,12 @@ export default function MaintenancePage() {
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <h3>Actifs à remplacer (rebus)</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <h3>Actifs à remplacer (rebus)</h3>
+          <button className="btn-secondary" onClick={() => router.push("/replacement-plan")}>
+            Ouvrir plan de remplacement
+          </button>
+        </div>
         {replacementAssets.length === 0 ? (
           <p>Aucun actif en rebus.</p>
         ) : (

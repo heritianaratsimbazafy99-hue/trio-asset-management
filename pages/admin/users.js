@@ -110,7 +110,23 @@ export default function AdminUsersPage() {
       return;
     }
 
-    setScoringRows(data || []);
+    setScoringRows(
+      (data || []).map((row) => ({
+        ...row,
+        weight_incidents: Number(row.weight_incidents || 0),
+        weight_maintenance_ratio: Number(row.weight_maintenance_ratio || 0),
+        weight_vnc_zero: Number(row.weight_vnc_zero || 0),
+        incident_threshold: Number(row.incident_threshold || 1),
+        replacement_ratio_threshold: Number(row.replacement_ratio_threshold || 0),
+        replacement_vnc_threshold: Number(row.replacement_vnc_threshold || 0),
+        top_risk_days: Number(row.top_risk_days || 30),
+        replacement_horizon_years: Number(row.replacement_horizon_years || 5),
+        replacement_capex_ratio: Number(row.replacement_capex_ratio || 100),
+        replacement_new_asset_opex_ratio: Number(row.replacement_new_asset_opex_ratio || 8),
+        replacement_old_asset_opex_growth: Number(row.replacement_old_asset_opex_growth || 15),
+        replacement_salvage_value_ratio: Number(row.replacement_salvage_value_ratio || 0),
+      }))
+    );
   }
 
   async function callAdminUpsertProfile(userId, role, companyId) {
@@ -185,6 +201,11 @@ export default function AdminUsersPage() {
       replacement_ratio_threshold: Number(row.replacement_ratio_threshold || 0),
       replacement_vnc_threshold: Number(row.replacement_vnc_threshold || 0),
       top_risk_days: Number(row.top_risk_days || 30),
+      replacement_horizon_years: Number(row.replacement_horizon_years || 5),
+      replacement_capex_ratio: Number(row.replacement_capex_ratio || 100),
+      replacement_new_asset_opex_ratio: Number(row.replacement_new_asset_opex_ratio || 8),
+      replacement_old_asset_opex_growth: Number(row.replacement_old_asset_opex_growth || 15),
+      replacement_salvage_value_ratio: Number(row.replacement_salvage_value_ratio || 0),
       updated_at: new Date().toISOString(),
     };
 
@@ -195,7 +216,7 @@ export default function AdminUsersPage() {
     if (upsertError) {
       setError(upsertError.message);
     } else {
-      setSuccess("Configuration scoring mise à jour.");
+      setSuccess("Configuration scoring et remplacement mise à jour.");
       await fetchScoringConfig();
     }
 
@@ -439,6 +460,11 @@ export default function AdminUsersPage() {
               <th>Seuil ratio remplacement</th>
               <th>Seuil VNC remplacement</th>
               <th>Fenêtre risque (jours)</th>
+              <th>Horizon remplacement</th>
+              <th>CAPEX (%)</th>
+              <th>OPEX nouvel actif (%)</th>
+              <th>Croissance OPEX existant (%)</th>
+              <th>Récupération VNC (%)</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -559,6 +585,86 @@ export default function AdminUsersPage() {
                   />
                 </td>
                 <td>
+                  <input
+                    className="input"
+                    type="number"
+                    value={row.replacement_horizon_years}
+                    onChange={(e) =>
+                      setScoringRows((prev) =>
+                        prev.map((item) =>
+                          item.company_id === row.company_id
+                            ? { ...item, replacement_horizon_years: e.target.value }
+                            : item
+                        )
+                      )
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    type="number"
+                    value={row.replacement_capex_ratio}
+                    onChange={(e) =>
+                      setScoringRows((prev) =>
+                        prev.map((item) =>
+                          item.company_id === row.company_id
+                            ? { ...item, replacement_capex_ratio: e.target.value }
+                            : item
+                        )
+                      )
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    type="number"
+                    value={row.replacement_new_asset_opex_ratio}
+                    onChange={(e) =>
+                      setScoringRows((prev) =>
+                        prev.map((item) =>
+                          item.company_id === row.company_id
+                            ? { ...item, replacement_new_asset_opex_ratio: e.target.value }
+                            : item
+                        )
+                      )
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    type="number"
+                    value={row.replacement_old_asset_opex_growth}
+                    onChange={(e) =>
+                      setScoringRows((prev) =>
+                        prev.map((item) =>
+                          item.company_id === row.company_id
+                            ? { ...item, replacement_old_asset_opex_growth: e.target.value }
+                            : item
+                        )
+                      )
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    type="number"
+                    value={row.replacement_salvage_value_ratio}
+                    onChange={(e) =>
+                      setScoringRows((prev) =>
+                        prev.map((item) =>
+                          item.company_id === row.company_id
+                            ? { ...item, replacement_salvage_value_ratio: e.target.value }
+                            : item
+                        )
+                      )
+                    }
+                  />
+                </td>
+                <td>
                   <button className="btn-secondary" disabled={saving} onClick={() => updateScoringRow(row)}>
                     Sauvegarder
                   </button>
@@ -567,7 +673,7 @@ export default function AdminUsersPage() {
             ))}
             {scoringRows.length === 0 && (
               <tr>
-                <td colSpan={9}>Aucune configuration trouvée.</td>
+                <td colSpan={14}>Aucune configuration trouvée.</td>
               </tr>
             )}
           </tbody>

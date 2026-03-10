@@ -450,6 +450,9 @@ export default function Dashboard() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn-secondary" onClick={() => router.push("/replacement-plan")}>
+            Plan remplacement
+          </button>
           <button className="btn-secondary" onClick={exportCsv}>
             Export CSV
           </button>

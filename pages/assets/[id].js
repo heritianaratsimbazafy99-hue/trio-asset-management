@@ -742,6 +742,12 @@ export default function AssetDetailPage() {
             Voir journal actif
           </button>
           <button
+            className="btn-secondary"
+            onClick={() => router.push(`/replacement-plan?asset_id=${asset.id}`)}
+          >
+            Plan remplacement
+          </button>
+          <button
             className="btn-primary"
             onClick={() => router.push(`/incidents/new?asset_id=${asset.id}`)}
           >

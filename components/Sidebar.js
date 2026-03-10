@@ -35,6 +35,7 @@ function getActiveSection(pathname = "") {
   if (pathname === "/assets") return "assets";
   if (pathname === "/incidents") return "incidents";
   if (pathname === "/maintenance") return "maintenance";
+  if (pathname === "/replacement-plan") return "replacement-plan";
   if (pathname === "/approvals") return "approvals";
   return null;
 }
@@ -115,6 +116,7 @@ export default function Sidebar() {
     { path: "/assets", label: "Immobilisations", count: counts.assets },
     { path: "/incidents", label: "Incidents", count: counts.incidents },
     { path: "/maintenance", label: "Maintenance", count: counts.maintenance },
+    { path: "/replacement-plan", label: "Remplacement", count: null },
     ...(canSeeApprovals ? [{ path: "/approvals", label: "Approvals", count: null }] : []),
     ...(canSeeAudit ? [{ path: "/audit-logs", label: "Audit Logs", count: null }] : []),
     ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", count: null }] : []),
