@@ -1,0 +1,153 @@
+{
+  "updatedAt": "2026-03-10",
+  "sourceOfTruth": {
+    "runbook": "docs/SQL_RUNBOOK_2026-03-10.md",
+    "catalog": "docs/SQL_CATALOG_2026-03-10.md"
+  },
+  "catalog": {
+    "canonical": [
+      "sql/group_mode_roles_setup.sql",
+      "sql/security_admin_audit_upgrade.sql",
+      "sql/feature_audit_assignment_history.sql",
+      "sql/assignment_update_ceo_daf_and_history_names.sql",
+      "sql/step_1_security_integrity_hardening.sql",
+      "sql/hotfix_asset_current_condition.sql",
+      "sql/hotfix_2026_03_04_assets_search_and_user_labels.sql",
+      "sql/step_2_secure_search_and_dashboard_rpc.sql",
+      "sql/hotfix_dashboard_insurance_expiring_2w.sql",
+      "sql/step_5_dashboard_amortization_chart.sql",
+      "sql/step_4_user_labels_email_patch.sql",
+      "sql/feature_workflow_approvals.sql",
+      "sql/feature_lot3_workflow_roles_and_asset_history.sql",
+      "sql/feature_replacement_plan_simulation.sql",
+      "sql/feature_company_rules_engine.sql",
+      "sql/feature_data_health_actions.sql",
+      "sql/feature_app_notifications.sql",
+      "sql/hotfix_asset_vehicle_details.sql",
+      "sql/hotfix_asset_code_autogenerate.sql",
+      "sql/feature_asset_bulk_import.sql",
+      "sql/step_3_post_migration_checks.sql"
+    ],
+    "superseded": [
+      {
+        "file": "sql/assets_assigned_to_name.sql",
+        "replacedBy": [
+          "sql/assignment_update_ceo_daf_and_history_names.sql"
+        ],
+        "reason": "Le script de gouvernance d'assignation enrichie ajoute deja assigned_to_name et l'historique de noms."
+      },
+      {
+        "file": "sql/assignment_allow_responsable_patch.sql",
+        "replacedBy": [
+          "sql/assignment_update_ceo_daf_and_history_names.sql"
+        ],
+        "reason": "Le droit RESPONSABLE est deja couvert dans la version complete de gouvernance d'assignation."
+      },
+      {
+        "file": "sql/feature_maintenance_rebus_workflows.sql",
+        "replacedBy": [
+          "sql/feature_lot3_workflow_roles_and_asset_history.sql"
+        ],
+        "reason": "Le lot 3 reprend et etend le workflow maintenance/rebus pour une base neuve."
+      },
+      {
+        "file": "sql/fix_assignment_history_fk_trigger.sql",
+        "replacedBy": [
+          "sql/feature_audit_assignment_history.sql",
+          "sql/assignment_update_ceo_daf_and_history_names.sql"
+        ],
+        "reason": "Le trigger AFTER est deja pose dans le socle d'historique et sa version enrichie."
+      },
+      {
+        "file": "sql/hotfix_asset_purchase_value_roles_and_audit.sql",
+        "replacedBy": [
+          "sql/feature_workflow_approvals.sql",
+          "sql/feature_lot3_workflow_roles_and_asset_history.sql"
+        ],
+        "reason": "Les droits et l'audit de la valeur d'achat sont desormais gouvernes par workflow et historique complet."
+      },
+      {
+        "file": "sql/predeploy_hardening.sql",
+        "replacedBy": [
+          "sql/security_admin_audit_upgrade.sql",
+          "sql/feature_audit_assignment_history.sql",
+          "sql/step_1_security_integrity_hardening.sql",
+          "sql/hotfix_2026_03_04_assets_search_and_user_labels.sql"
+        ],
+        "reason": "Les garde-fous securite/audit/labels ont ete absorbes dans le chemin canonique actuel."
+      }
+    ],
+    "targetedPatches": [
+      {
+        "file": "sql/hotfix_admin_upsert_profile_ambiguous_id.sql",
+        "useWhen": "A executer seulement si un environnement existant possede encore l'ancienne version ambigue de admin_upsert_profile."
+      }
+    ]
+  },
+  "runbooks": {
+    "fromScratch": [
+      "sql/group_mode_roles_setup.sql",
+      "sql/security_admin_audit_upgrade.sql",
+      "sql/feature_audit_assignment_history.sql",
+      "sql/assignment_update_ceo_daf_and_history_names.sql",
+      "sql/step_1_security_integrity_hardening.sql",
+      "sql/hotfix_asset_current_condition.sql",
+      "sql/hotfix_2026_03_04_assets_search_and_user_labels.sql",
+      "sql/step_2_secure_search_and_dashboard_rpc.sql",
+      "sql/hotfix_dashboard_insurance_expiring_2w.sql",
+      "sql/step_5_dashboard_amortization_chart.sql",
+      "sql/step_4_user_labels_email_patch.sql",
+      "sql/feature_workflow_approvals.sql",
+      "sql/feature_lot3_workflow_roles_and_asset_history.sql",
+      "sql/feature_replacement_plan_simulation.sql",
+      "sql/feature_company_rules_engine.sql",
+      "sql/feature_data_health_actions.sql",
+      "sql/feature_app_notifications.sql",
+      "sql/hotfix_asset_vehicle_details.sql",
+      "sql/hotfix_asset_code_autogenerate.sql",
+      "sql/feature_asset_bulk_import.sql",
+      "sql/step_3_post_migration_checks.sql"
+    ],
+    "prodCatchUp": {
+      "alignedThroughLot8": [
+        "sql/step_3_post_migration_checks.sql"
+      ],
+      "alignedThroughLot5": [
+        "sql/feature_data_health_actions.sql",
+        "sql/feature_app_notifications.sql",
+        "sql/hotfix_asset_current_condition.sql",
+        "sql/hotfix_asset_vehicle_details.sql",
+        "sql/hotfix_asset_code_autogenerate.sql",
+        "sql/feature_asset_bulk_import.sql",
+        "sql/step_3_post_migration_checks.sql"
+      ],
+      "legacyLot2": [
+        "sql/feature_lot3_workflow_roles_and_asset_history.sql",
+        "sql/feature_replacement_plan_simulation.sql",
+        "sql/feature_company_rules_engine.sql",
+        "sql/feature_data_health_actions.sql",
+        "sql/feature_app_notifications.sql",
+        "sql/hotfix_asset_current_condition.sql",
+        "sql/hotfix_asset_vehicle_details.sql",
+        "sql/hotfix_asset_code_autogenerate.sql",
+        "sql/feature_asset_bulk_import.sql",
+        "sql/step_3_post_migration_checks.sql"
+      ],
+      "securityDashboardOnly": [
+        "sql/feature_audit_assignment_history.sql",
+        "sql/assignment_update_ceo_daf_and_history_names.sql",
+        "sql/feature_workflow_approvals.sql",
+        "sql/feature_lot3_workflow_roles_and_asset_history.sql",
+        "sql/feature_replacement_plan_simulation.sql",
+        "sql/feature_company_rules_engine.sql",
+        "sql/feature_data_health_actions.sql",
+        "sql/feature_app_notifications.sql",
+        "sql/hotfix_asset_current_condition.sql",
+        "sql/hotfix_asset_vehicle_details.sql",
+        "sql/hotfix_asset_code_autogenerate.sql",
+        "sql/feature_asset_bulk_import.sql",
+        "sql/step_3_post_migration_checks.sql"
+      ]
+    }
+  }
+}

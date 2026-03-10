@@ -4,7 +4,7 @@ Date de mise à jour: 2026-03-10
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 8 sont implémentés côté code:
+Les lots 1 à 9 sont implémentés côté code ou documentation d'exploitation:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -14,6 +14,7 @@ Les lots 1 à 8 sont implémentés côté code:
 6. Santé des données actionnable depuis le dashboard avec corrections directes
 7. Notifications applicatives pour les workflows avec centre de notifications dans l'application
 8. Import massif Excel / CSV avec dry-run de validation avant écriture
+9. Consolidation technique SQL avec manifeste canonique, catalogue de scripts et runbook unique
 
 ## Règles métier en vigueur
 
@@ -39,14 +40,19 @@ Les lots 1 à 8 sont implémentés côté code:
   - `Audit Logs` devient `Journal d'audit`
   - les libellés workflow exposent `valeur d'achat` au lieu de `valeur comptable`
 - Un runbook SQL unique est maintenu dans `docs/SQL_RUNBOOK_2026-03-10.md`
+- Un manifeste SQL versionné et un catalogue de scripts sont maintenus dans:
+  - `sql/sql_manifest_2026-03-10.json`
+  - `docs/SQL_CATALOG_2026-03-10.md`
 
 ## SQL de référence
 
 Le chemin standard à jour pour une base neuve ou pour un rattrapage prod est documenté dans:
 
 - `docs/SQL_RUNBOOK_2026-03-10.md`
+- `sql/sql_manifest_2026-03-10.json`
+- `docs/SQL_CATALOG_2026-03-10.md`
 
-Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le runbook fait foi.
+Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le manifeste et le runbook font foi.
 
 ## Etat technique courant
 
@@ -72,14 +78,12 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ru
 
 Le prochain lot à coder est:
 
-9. Consolidation technique SQL et documentation d'exploitation
+10. Notifications email éventuelles
 
 Objectif:
-- rationaliser l'ordre SQL réel
-- réduire les scripts obsolètes ou supersédés
-- disposer d'un runbook d'exploitation unique et stable
+- compléter les notifications applicatives par un canal email
+- cibler les approbateurs et les demandeurs sur les événements critiques
 
-## Backlog restant après le lot 8
+## Backlog restant après le lot 9
 
-- Consolidation technique SQL et documentation d'exploitation
-- Notifications email éventuelles dans un second temps
+- Notifications email éventuelles
