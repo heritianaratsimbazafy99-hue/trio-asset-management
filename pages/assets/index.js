@@ -449,6 +449,10 @@ export default function AssetsPage() {
             {exporting ? "Export..." : "Exporter CSV"}
           </button>
 
+          <button className="btn-warning" onClick={() => router.push("/assets/import")}>
+            Import massif
+          </button>
+
           <button className="btn-primary" onClick={() => router.push("/assets/new")}>
             + Ajouter un actif
           </button>

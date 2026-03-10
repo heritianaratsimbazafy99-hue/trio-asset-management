@@ -4,7 +4,7 @@ Date de mise à jour: 2026-03-10
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 7 sont implémentés côté code:
+Les lots 1 à 8 sont implémentés côté code:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -13,6 +13,7 @@ Les lots 1 à 7 sont implémentés côté code:
 5. Moteur de règles configurable par société sans code
 6. Santé des données actionnable depuis le dashboard avec corrections directes
 7. Notifications applicatives pour les workflows avec centre de notifications dans l'application
+8. Import massif Excel / CSV avec dry-run de validation avant écriture
 
 ## Règles métier en vigueur
 
@@ -71,15 +72,14 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ru
 
 Le prochain lot à coder est:
 
-8. Import Excel / CSV massif avec dry-run de validation
+9. Consolidation technique SQL et documentation d'exploitation
 
 Objectif:
-- fiabiliser un import massif sans écriture directe
-- afficher les erreurs et alertes avant validation
-- réutiliser les règles métier et la santé des données déjà en place
+- rationaliser l'ordre SQL réel
+- réduire les scripts obsolètes ou supersédés
+- disposer d'un runbook d'exploitation unique et stable
 
-## Backlog restant après le lot 7
+## Backlog restant après le lot 8
 
-- Import Excel / CSV massif avec dry-run de validation
 - Consolidation technique SQL et documentation d'exploitation
 - Notifications email éventuelles dans un second temps

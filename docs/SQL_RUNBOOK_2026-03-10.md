@@ -27,7 +27,8 @@ Exécuter les scripts dans cet ordre:
 13. `sql/feature_company_rules_engine.sql`
 14. `sql/feature_data_health_actions.sql`
 15. `sql/feature_app_notifications.sql`
-16. `sql/step_3_post_migration_checks.sql`
+16. `sql/feature_asset_bulk_import.sql`
+17. `sql/step_3_post_migration_checks.sql`
 
 ## 2. Important sur les scripts supersédés
 
@@ -60,6 +61,7 @@ Exécuter uniquement:
 
 1. `sql/feature_data_health_actions.sql`
 2. `sql/feature_app_notifications.sql`
+3. `sql/feature_asset_bulk_import.sql`
 
 ### Cas B - prod a déjà reçu l'ancien lot 2
 
@@ -70,7 +72,8 @@ Exécuter dans cet ordre:
 3. `sql/feature_company_rules_engine.sql`
 4. `sql/feature_data_health_actions.sql`
 5. `sql/feature_app_notifications.sql`
-6. `sql/step_3_post_migration_checks.sql`
+6. `sql/feature_asset_bulk_import.sql`
+7. `sql/step_3_post_migration_checks.sql`
 
 ### Cas C - prod a la base sécurité/dashboard mais pas les lots 1 à 6
 
@@ -82,7 +85,8 @@ Exécuter:
 4. `sql/feature_company_rules_engine.sql`
 5. `sql/feature_data_health_actions.sql`
 6. `sql/feature_app_notifications.sql`
-7. `sql/step_3_post_migration_checks.sql`
+7. `sql/feature_asset_bulk_import.sql`
+8. `sql/step_3_post_migration_checks.sql`
 
 ## 4. Vérification SQL du lot 6
 
@@ -158,6 +162,23 @@ select public.get_unread_notifications_count();
 
 select *
 from public.list_notifications_secure('ALL', 20, 0);
+
+select *
+from public.bulk_import_assets(
+  jsonb_build_array(
+    jsonb_build_object(
+      'name', 'Test import dry-run',
+      'category', 'IT_ORDINATEURS',
+      'company_name', 'Mobix',
+      'purchase_value', '1200000',
+      'status', 'EN_SERVICE',
+      'current_condition', 'BON',
+      'amortissement_type', 'LINEAIRE',
+      'amortissement_duration', '5'
+    )
+  ),
+  true
+);
 ```
 
 Puis vérifier côté application:
@@ -166,5 +187,6 @@ Puis vérifier côté application:
 - notifications
 - validations
 - journal d'audit
+- import massif d'actifs
 - plan de remplacement
 - règles

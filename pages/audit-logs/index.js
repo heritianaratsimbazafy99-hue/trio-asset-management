@@ -20,6 +20,7 @@ const ACTION_OPTIONS = [
   "WORKFLOW_REQUEST_REJECTED",
   "WORKFLOW_REQUEST_FAILED",
   "DATA_HEALTH_FIX",
+  "ASSET_IMPORT_BATCH",
 ];
 
 const ACTION_LABELS = {
@@ -37,6 +38,7 @@ const ACTION_LABELS = {
   WORKFLOW_REQUEST_REJECTED: "Demande rejetée",
   WORKFLOW_REQUEST_FAILED: "Demande en échec",
   DATA_HEALTH_FIX: "Correction santé des données",
+  ASSET_IMPORT_BATCH: "Import massif d'actifs",
 };
 
 function formatDate(value) {
