@@ -4,11 +4,7 @@ import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import StatusBadge from "../../components/StatusBadge";
 import { supabase } from "../../lib/supabaseClient";
-import {
-  APP_ROLES,
-  getCurrentUserProfile,
-  hasOneRole,
-} from "../../lib/accessControl";
+import { getCurrentUserProfile } from "../../lib/accessControl";
 import {
   fetchUserDirectoryMapByIds,
   getUserLabelById,
@@ -22,6 +18,7 @@ import {
   ASSET_CONDITIONS,
   getAssetConditionLabel,
 } from "../../lib/assetConditions";
+import { canRequestAssetDeletion } from "../../lib/workflowRequests";
 
 function normalizeSearchTerm(term) {
   return String(term || "").trim();
@@ -81,10 +78,11 @@ export default function AssetsPage() {
   const [sortDirection, setSortDirection] = useState("desc");
   const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [exporting, setExporting] = useState(false);
   const [assignedUsersMap, setAssignedUsersMap] = useState({});
 
-  const canDeleteAssets = hasOneRole(userRole, [APP_ROLES.CEO]);
+  const canDeleteAssets = canRequestAssetDeletion(userRole);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   useEffect(() => {
@@ -255,21 +253,32 @@ export default function AssetsPage() {
   async function handleDeleteAsset(asset) {
     if (!canDeleteAssets) return;
     const confirmed = window.confirm(
-      `Supprimer définitivement l'actif "${asset.name}" ?`
+      `Créer une demande de suppression pour l'actif "${asset.name}" ?`
     );
     if (!confirmed) return;
 
+    const reason = window.prompt("Motif de suppression (obligatoire)", "");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      setError("Le motif de suppression est obligatoire.");
+      return;
+    }
+
     setActionLoading(true);
     setError("");
-    const { error: deleteError } = await supabase
-      .from("assets")
-      .delete()
-      .eq("id", asset.id);
+    setMessage("");
+
+    const { error: deleteError } = await supabase.rpc("request_asset_delete", {
+      p_asset_id: asset.id,
+      p_reason: reason.trim(),
+    });
 
     if (deleteError) {
       setError(deleteError.message);
     } else {
-      await fetchAssets();
+      setMessage(
+        "Demande de suppression créée. L'actif sera supprimé après 2 validations."
+      );
     }
     setActionLoading(false);
   }
@@ -301,6 +310,7 @@ export default function AssetsPage() {
   return (
     <Layout>
       <h1>Immobilisations</h1>
+      {message && <div className="alert-success">{message}</div>}
 
       <div className="card" style={{ marginBottom: 20 }}>
         <strong>Total valeur (page courante) :</strong> {formatMGA(totals)}
@@ -460,7 +470,7 @@ export default function AssetsPage() {
                           disabled={actionLoading}
                           onClick={() => handleDeleteAsset(asset)}
                         >
-                          Supprimer
+                          Demander suppression
                         </button>
                       )}
                     </td>

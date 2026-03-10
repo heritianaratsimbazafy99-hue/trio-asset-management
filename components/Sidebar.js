@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
-import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../lib/accessControl";
+import {
+  APP_ROLES,
+  canApproveWorkflow,
+  getCurrentUserProfile,
+  hasOneRole,
+} from "../lib/accessControl";
 
 const SIDEBAR_CACHE_KEY = "trio_sidebar_counts_v1";
 
@@ -31,6 +36,7 @@ function getActiveSection(pathname = "") {
   if (pathname === "/assets") return "assets";
   if (pathname === "/incidents") return "incidents";
   if (pathname === "/maintenance") return "maintenance";
+  if (pathname === "/approvals") return "approvals";
   return null;
 }
 
@@ -103,12 +109,14 @@ export default function Sidebar() {
 
   const canSeeAdmin = hasOneRole(userRole, [APP_ROLES.CEO]);
   const canSeeAudit = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
+  const canSeeApprovals = canApproveWorkflow(userRole);
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", count: null },
     { path: "/assets", label: "Immobilisations", count: counts.assets },
     { path: "/incidents", label: "Incidents", count: counts.incidents },
     { path: "/maintenance", label: "Maintenance", count: counts.maintenance },
+    ...(canSeeApprovals ? [{ path: "/approvals", label: "Approvals", count: null }] : []),
     ...(canSeeAudit ? [{ path: "/audit-logs", label: "Audit Logs", count: null }] : []),
     ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", count: null }] : []),
   ];

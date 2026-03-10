@@ -568,6 +568,16 @@ h1 {
   font-weight: 700;
 }
 
+.alert-success {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
 .form-card {
   background: #ffffff;
   border-radius: 14px;
@@ -691,7 +701,8 @@ h1 {
 }
 
 .badge-success,
-.badge-warning {
+.badge-warning,
+.badge-danger {
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
@@ -738,6 +749,11 @@ h1 {
 .badge-warning {
   background: #fef3c7;
   color: #92400e;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .timeline {
