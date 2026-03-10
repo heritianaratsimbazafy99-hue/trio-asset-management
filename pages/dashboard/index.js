@@ -66,6 +66,8 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([]);
   const [summary, setSummary] = useState(null);
   const [topRisksChart, setTopRisksChart] = useState([]);
+  const [actionsInsuranceExpiring, setActionsInsuranceExpiring] = useState([]);
+  const [insuranceActionsError, setInsuranceActionsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [contextReady, setContextReady] = useState(false);
@@ -151,6 +153,7 @@ export default function Dashboard() {
   async function fetchSummary() {
     setSummaryLoading(true);
     setError("");
+    setInsuranceActionsError("");
 
     const commonPayload = {
       p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
@@ -158,7 +161,7 @@ export default function Dashboard() {
       p_period: selectedPeriod,
     };
 
-    const [summaryResponse, top10Response] = await Promise.all([
+    const [summaryResponse, top10Response, insuranceResponse] = await Promise.all([
       supabase.rpc("dashboard_summary", {
         ...commonPayload,
         p_risk_page: riskPage,
@@ -169,6 +172,11 @@ export default function Dashboard() {
         p_risk_page: 1,
         p_risk_page_size: 10,
       }),
+      supabase.rpc("dashboard_insurance_expiring_2w", {
+        p_company_id: commonPayload.p_company_id,
+        p_category: commonPayload.p_category,
+        p_limit: 8,
+      }),
     ]);
 
     const { data, error: rpcError } = summaryResponse;
@@ -177,6 +185,7 @@ export default function Dashboard() {
       setError(rpcError.message);
       setSummary(null);
       setTopRisksChart([]);
+      setActionsInsuranceExpiring([]);
       setSummaryLoading(false);
       return;
     }
@@ -186,6 +195,14 @@ export default function Dashboard() {
       ? top10Response.data?.top_risks || []
       : (data?.top_risks || []).slice(0, 10);
     setTopRisksChart(top10Rows);
+
+    if (insuranceResponse.error) {
+      setActionsInsuranceExpiring([]);
+      setInsuranceActionsError(insuranceResponse.error.message || "Erreur chargement assurances.");
+    } else {
+      setActionsInsuranceExpiring(insuranceResponse.data || []);
+    }
+
     setSummaryLoading(false);
   }
 
@@ -867,6 +884,57 @@ export default function Dashboard() {
                 {actionsOverdueMaintenance.length === 0 && (
                   <tr>
                     <td colSpan={4}>Aucune maintenance en retard.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <h4 style={{ marginBottom: 8 }}>Assurances à renouveler (14 jours)</h4>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Actif</th>
+                  <th>Société</th>
+                  <th>Expire le</th>
+                  <th>Jours restants</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {actionsInsuranceExpiring.map((item) => (
+                  <tr key={`insurance-action-${item.asset_id}-${item.insurance_end_date}`}>
+                    <td>
+                      {item.asset_id ? (
+                        <Link className="dashboard-link" href={`/assets/${item.asset_id}`}>
+                          {item.asset_name || "-"}
+                        </Link>
+                      ) : (
+                        item.asset_name || "-"
+                      )}
+                    </td>
+                    <td>{item.company_name || "-"}</td>
+                    <td>{formatDate(item.insurance_end_date)}</td>
+                    <td>{normalizeNumber(item.days_remaining)} j</td>
+                    <td>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => router.push(`/assets/${item.asset_id}`)}
+                      >
+                        Voir actif
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {actionsInsuranceExpiring.length === 0 && !insuranceActionsError && (
+                  <tr>
+                    <td colSpan={5}>Aucune assurance à renouveler dans les 14 jours.</td>
+                  </tr>
+                )}
+                {insuranceActionsError && (
+                  <tr>
+                    <td colSpan={5}>Alerte assurance indisponible: {insuranceActionsError}</td>
                   </tr>
                 )}
               </tbody>
