@@ -18,7 +18,10 @@ import {
   ASSET_CONDITIONS,
   getAssetConditionLabel,
 } from "../../lib/assetConditions";
-import { canRequestAssetDeletion } from "../../lib/workflowRequests";
+import {
+  canDirectlyDeleteAsset,
+  canRequestAssetDeletion,
+} from "../../lib/workflowRequests";
 
 function normalizeSearchTerm(term) {
   return String(term || "").trim();
@@ -83,6 +86,7 @@ export default function AssetsPage() {
   const [assignedUsersMap, setAssignedUsersMap] = useState({});
 
   const canDeleteAssets = canRequestAssetDeletion(userRole);
+  const canDeleteDirectly = canDirectlyDeleteAsset(userRole);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   useEffect(() => {
@@ -253,32 +257,61 @@ export default function AssetsPage() {
   async function handleDeleteAsset(asset) {
     if (!canDeleteAssets) return;
     const confirmed = window.confirm(
-      `Créer une demande de suppression pour l'actif "${asset.name}" ?`
+      canDeleteDirectly
+        ? `Supprimer immédiatement l'actif "${asset.name}" ?`
+        : `Créer une demande de suppression pour l'actif "${asset.name}" ?`
     );
     if (!confirmed) return;
-
-    const reason = window.prompt("Motif de suppression (obligatoire)", "");
-    if (reason === null) return;
-    if (!reason.trim()) {
-      setError("Le motif de suppression est obligatoire.");
-      return;
-    }
 
     setActionLoading(true);
     setError("");
     setMessage("");
 
-    const { error: deleteError } = await supabase.rpc("request_asset_delete", {
-      p_asset_id: asset.id,
-      p_reason: reason.trim(),
-    });
+    let deleteError = null;
+
+    if (canDeleteDirectly) {
+      const reason = window.prompt(
+        "Motif de suppression (optionnel, recommandé pour traçabilité)",
+        ""
+      );
+      if (reason === null) {
+        setActionLoading(false);
+        return;
+      }
+
+      const response = await supabase.rpc("delete_asset_immediately", {
+        p_asset_id: asset.id,
+        p_reason: reason.trim() || null,
+      });
+      deleteError = response.error;
+    } else {
+      const reason = window.prompt("Motif de suppression (obligatoire)", "");
+      if (reason === null) {
+        setActionLoading(false);
+        return;
+      }
+      if (!reason.trim()) {
+        setActionLoading(false);
+        setError("Le motif de suppression est obligatoire.");
+        return;
+      }
+
+      const response = await supabase.rpc("request_asset_delete", {
+        p_asset_id: asset.id,
+        p_reason: reason.trim(),
+      });
+      deleteError = response.error;
+    }
 
     if (deleteError) {
       setError(deleteError.message);
     } else {
       setMessage(
-        "Demande de suppression créée. L'actif sera supprimé après 2 validations."
+        canDeleteDirectly
+          ? "Actif supprimé par le CEO."
+          : "Demande de suppression créée. Elle est maintenant en attente de validation du CEO."
       );
+      await fetchAssets();
     }
     setActionLoading(false);
   }
@@ -470,7 +503,7 @@ export default function AssetsPage() {
                           disabled={actionLoading}
                           onClick={() => handleDeleteAsset(asset)}
                         >
-                          Demander suppression
+                          {canDeleteDirectly ? "Supprimer actif" : "Demander suppression"}
                         </button>
                       )}
                     </td>

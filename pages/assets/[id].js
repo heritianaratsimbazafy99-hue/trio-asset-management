@@ -30,6 +30,11 @@ import { formatMGA } from "../../lib/currency";
 import { getAssetCategoryLabel } from "../../lib/assetCategories";
 import { getAssetConditionLabel } from "../../lib/assetConditions";
 import {
+  canDirectlyChangePurchaseValue,
+  canRequestAssetRebus,
+  canRequestPurchaseValueChange,
+} from "../../lib/workflowRequests";
+import {
   INSURANCE_TYPE_OPTIONS,
   VEHICLE_INFO_LABELS,
   VEHICLE_STATUS_OPTIONS,
@@ -64,6 +69,19 @@ function getHistoryAssignmentLabel(row, userIdField, nameField, usersMap) {
   if (row?.[nameField]) return row[nameField];
   if (fromUser && fromUser !== "-") return fromUser;
   return "-";
+}
+
+function getMaintenanceDisplayStatus(item) {
+  const approvalStatus = String(item?.approval_status || "").toUpperCase();
+  const status = String(item?.status || "").toUpperCase();
+
+  if (approvalStatus === "REJETEE") return "REJETEE";
+  if (approvalStatus === "EN_ATTENTE_VALIDATION" || status === "EN_ATTENTE_VALIDATION") {
+    return "EN_ATTENTE_VALIDATION";
+  }
+  if (item?.is_completed || status === "TERMINEE") return "TERMINEE";
+  if (status === "EN_COURS") return "EN_COURS";
+  return status || "PLANIFIEE";
 }
 
 const INSURANCE_TYPE_LABEL_BY_VALUE = INSURANCE_TYPE_OPTIONS.reduce((acc, item) => {
@@ -187,6 +205,25 @@ export default function AssetDetailPage() {
     fetchAll(id);
   }, [id]);
 
+  useEffect(() => {
+    const flash = router.query.flash;
+    if (!flash || !id) return;
+
+    const nextMessage = Array.isArray(flash) ? flash[0] : flash;
+    if (nextMessage) {
+      setStatusMessage(nextMessage);
+    }
+
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: { id },
+      },
+      undefined,
+      { shallow: true }
+    );
+  }, [id, router, router.query.flash]);
+
   const analysis = useMemo(
     () =>
       evaluateAssetHealth({
@@ -207,11 +244,14 @@ export default function AssetDetailPage() {
     APP_ROLES.DAF,
     APP_ROLES.RESPONSABLE,
   ]);
-  const canEditPurchaseValue = hasOneRole(userRole, [
+  const canEditAsset = hasOneRole(userRole, [
     APP_ROLES.CEO,
     APP_ROLES.DAF,
     APP_ROLES.RESPONSABLE,
   ]);
+  const canManagePurchaseValue = canRequestPurchaseValueChange(userRole);
+  const canDirectlyManagePurchaseValue = canDirectlyChangePurchaseValue(userRole);
+  const canSignalIrreparable = canRequestAssetRebus(userRole);
   const isVehicleAsset = isVehicleCategory(asset?.category);
   const vehicleDetails =
     asset?.vehicle_details && typeof asset.vehicle_details === "object"
@@ -241,7 +281,7 @@ export default function AssetDetailPage() {
       type: "maintenance",
       title: item.title || item.description || "Maintenance",
       created_at: item.created_at || item.date,
-      status: item.status,
+      status: getMaintenanceDisplayStatus(item),
       reportedBy: getUserLabelById(usersMap, item.reported_by),
       closedBy: getUserLabelById(usersMap, item.completed_by),
       closedAt: item.completed_at,
@@ -284,12 +324,20 @@ export default function AssetDetailPage() {
 
   async function applyAutomaticAssetStatus() {
     if (!asset?.id) return;
+    if (String(asset.status || "").toUpperCase() === "REBUS") {
+      setStatusMessage("Action ignorée: un actif en rebus conserve ce statut.");
+      return;
+    }
     setStatusBusy(true);
     setStatusMessage("");
 
     const hasOpenIncident = incidents.some((item) => item.status !== "RESOLU");
     const hasPendingMaintenance = maintenance.some(
-      (item) => !item.is_completed && item.status !== "TERMINEE"
+      (item) =>
+        !item.is_completed &&
+        item.status !== "TERMINEE" &&
+        String(item.approval_status || "").toUpperCase() !== "REJETEE" &&
+        String(item.approval_status || "").toUpperCase() !== "EN_ATTENTE_VALIDATION"
     );
     const nextStatus = hasOpenIncident || hasPendingMaintenance
       ? "EN_MAINTENANCE"
@@ -354,6 +402,112 @@ export default function AssetDetailPage() {
     }
 
     setAssignBusy(false);
+  }
+
+  async function requestAssetRebus() {
+    if (!asset?.id) return;
+    if (!canSignalIrreparable) {
+      setStatusMessage("Action refusée: seul le CEO ou le RESPONSABLE_MAINTENANCE peut signaler un actif irréparable.");
+      return;
+    }
+
+    const reason = window.prompt("Motif du passage en rebus (obligatoire)", "");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      setStatusMessage("Le motif du passage en rebus est obligatoire.");
+      return;
+    }
+
+    setStatusBusy(true);
+    setStatusMessage("");
+
+    const { error } = await supabase.rpc("request_asset_rebus", {
+      p_asset_id: asset.id,
+      p_reason: reason.trim(),
+    });
+
+    if (error) {
+      setStatusMessage(`Erreur création demande rebus: ${error.message}`);
+    } else {
+      setStatusMessage("Demande de passage en rebus envoyée pour validation.");
+    }
+
+    setStatusBusy(false);
+  }
+
+  async function managePurchaseValue() {
+    if (!asset?.id) return;
+    if (!canManagePurchaseValue) {
+      setStatusMessage("Action refusée: vous ne pouvez pas soumettre ce changement de valeur d'achat.");
+      return;
+    }
+
+    const currentValue = Number(asset.purchase_value ?? asset.value ?? 0);
+    const nextValueRaw = window.prompt(
+      "Nouvelle valeur d'achat",
+      String(currentValue || "")
+    );
+
+    if (nextValueRaw === null) return;
+
+    const nextValue = Number(nextValueRaw);
+    if (!Number.isFinite(nextValue) || nextValue < 0) {
+      setStatusMessage("Valeur d'achat invalide.");
+      return;
+    }
+
+    if (nextValue === currentValue) {
+      setStatusMessage("La nouvelle valeur d'achat doit être différente de la valeur actuelle.");
+      return;
+    }
+
+    let reason = null;
+    if (canDirectlyManagePurchaseValue) {
+      const reasonPrompt = window.prompt(
+        "Motif du changement (optionnel, recommandé pour traçabilité)",
+        ""
+      );
+      if (reasonPrompt === null) return;
+      reason = reasonPrompt.trim() || null;
+    } else {
+      const reasonPrompt = window.prompt(
+        "Motif du changement de valeur d'achat (obligatoire)",
+        ""
+      );
+      if (reasonPrompt === null) return;
+      if (!reasonPrompt.trim()) {
+        setStatusMessage("Le motif du changement de valeur d'achat est obligatoire.");
+        return;
+      }
+      reason = reasonPrompt.trim();
+    }
+
+    setStatusBusy(true);
+    setStatusMessage("");
+
+    const rpcName = canDirectlyManagePurchaseValue
+      ? "update_asset_purchase_value_immediately"
+      : "request_asset_purchase_value_change";
+    const { error } = await supabase.rpc(rpcName, {
+      p_asset_id: asset.id,
+      p_new_purchase_value: nextValue,
+      p_reason: reason,
+    });
+
+    if (error) {
+      setStatusMessage(`Erreur changement valeur d'achat: ${error.message}`);
+      setStatusBusy(false);
+      return;
+    }
+
+    setStatusMessage(
+      canDirectlyManagePurchaseValue
+        ? "Valeur d'achat mise à jour directement par le CEO."
+        : "Demande de changement de valeur d'achat envoyée au CEO."
+    );
+
+    await fetchAll(asset.id);
+    setStatusBusy(false);
   }
 
   function generateAssetPdf() {
@@ -566,12 +720,19 @@ export default function AssetDetailPage() {
         )}
 
         <div style={{ marginTop: 15, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {canEditPurchaseValue && (
+          {canEditAsset && (
             <button
               className="btn-secondary"
               onClick={() => router.push(`/assets/edit/${asset.id}`)}
             >
               Modifier actif
+            </button>
+          )}
+          {canManagePurchaseValue && (
+            <button className="btn-secondary" disabled={statusBusy} onClick={managePurchaseValue}>
+              {canDirectlyManagePurchaseValue
+                ? "Changer valeur d'achat"
+                : "Demander changement valeur"}
             </button>
           )}
           <button
@@ -589,9 +750,15 @@ export default function AssetDetailPage() {
           <button
             className="btn-warning"
             onClick={() => router.push(`/maintenance/new?asset_id=${asset.id}`)}
+            disabled={String(asset.status || "").toUpperCase() === "REBUS"}
           >
             + Maintenance
           </button>
+          {canSignalIrreparable && String(asset.status || "").toUpperCase() !== "REBUS" && (
+            <button className="btn-danger" disabled={statusBusy} onClick={requestAssetRebus}>
+              Signaler irréparable
+            </button>
+          )}
           <button className="btn-secondary" onClick={generateAssetPdf}>
             Generer PDF fiche actif
           </button>
@@ -855,7 +1022,7 @@ export default function AssetDetailPage() {
                 <tr key={`maintenance-history-${item.id}`}>
                   <td>{item.title || item.description || "-"}</td>
                   <td>{formatMGA(item.cost)}</td>
-                  <td>{item.status || "-"}</td>
+                  <td>{getMaintenanceDisplayStatus(item)}</td>
                   <td>{getUserLabelById(usersMap, item.reported_by)}</td>
                   <td>{item.created_at ? new Date(item.created_at).toLocaleDateString("fr-FR") : "-"}</td>
                   <td>{getUserLabelById(usersMap, item.completed_by)}</td>

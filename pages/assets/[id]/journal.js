@@ -22,6 +22,7 @@ function eventLabel(item) {
   if (type === "INCIDENT_CLOSED") return "Incident clôturé";
   if (type === "MAINTENANCE_REPORTED") return "Maintenance signalée";
   if (type === "MAINTENANCE_CLOSED") return "Maintenance clôturée";
+  if (type === "ASSET_UPDATED") return "Modification actif";
   if (type === "ASSET_ASSIGNMENT_INITIAL") return "Attribution initiale";
   if (type === "ASSET_ASSIGNMENT_CHANGE") return "Changement attribution";
   if (type === "AUDIT") return "Action audit";
@@ -34,6 +35,31 @@ function getAssignmentLabel(usersMap, userId, name) {
   if (name) return name;
   if (fromUser && fromUser !== "-") return fromUser;
   return "-";
+}
+
+function formatChangeValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+
+function formatAssetDiff(diff) {
+  if (!diff || typeof diff !== "object") return "Modification actif";
+  const entries = Object.entries(diff);
+  if (!entries.length) return "Modification actif";
+  return entries
+    .map(([field, change]) => {
+      const before = formatChangeValue(change?.before);
+      const after = formatChangeValue(change?.after);
+      return `${field}: ${before} -> ${after}`;
+    })
+    .join(" | ");
 }
 
 export default function AssetJournalPage() {
@@ -66,6 +92,7 @@ export default function AssetJournalPage() {
       { data: assetData, error: assetError },
       { data: incidentsData, error: incidentsError },
       { data: maintenanceData, error: maintenanceError },
+      { data: assetChangeData, error: assetChangeError },
       { data: assignmentData, error: assignmentError },
       { data: auditAssetRows },
       { data: auditPayloadRows },
@@ -79,6 +106,11 @@ export default function AssetJournalPage() {
       supabase
         .from("maintenance")
         .select("id,title,description,status,cost,created_at,completed_at,reported_by,completed_by")
+        .eq("asset_id", assetId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("asset_change_history")
+        .select("id,asset_id,actor_user_id,changed_fields,diff,before_snapshot,after_snapshot,change_source,change_reason,created_at")
         .eq("asset_id", assetId)
         .order("created_at", { ascending: false }),
       supabase
@@ -103,11 +135,12 @@ export default function AssetJournalPage() {
         : Promise.resolve(emptyAudit),
     ]);
 
-    if (assetError || incidentsError || maintenanceError || assignmentError) {
+    if (assetError || incidentsError || maintenanceError || assetChangeError || assignmentError) {
       setError(
         assetError?.message ||
           incidentsError?.message ||
           maintenanceError?.message ||
+          assetChangeError?.message ||
           assignmentError?.message ||
           "Erreur de chargement du journal."
       );
@@ -174,6 +207,23 @@ export default function AssetJournalPage() {
       source: "asset_assignment_history",
     }));
 
+    const assetUpdateEvents = (assetChangeData || []).map((item) => ({
+      id: `asset-update-${item.id}`,
+      date: item.created_at,
+      event_type: "ASSET_UPDATED",
+      actor_user_id: item.actor_user_id,
+      changed_fields: item.changed_fields || [],
+      diff: item.diff || {},
+      details: [
+        item.change_source ? `Source: ${item.change_source}` : "",
+        item.change_reason ? `Motif: ${item.change_reason}` : "",
+        formatAssetDiff(item.diff),
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      source: "asset_change_history",
+    }));
+
     const mergedAudit = [
       ...(auditAssetRows || []),
       ...(auditPayloadRows || []),
@@ -199,6 +249,7 @@ export default function AssetJournalPage() {
     const merged = [
       ...incidentEvents,
       ...maintenanceEvents,
+      ...assetUpdateEvents,
       ...assignmentEvents,
       ...auditEvents,
     ].sort((a, b) => toTs(b.date) - toTs(a.date));

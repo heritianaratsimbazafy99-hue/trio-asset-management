@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
-import { canApproveWorkflow, getCurrentUserProfile } from "../../lib/accessControl";
+import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDirectory";
 import {
   getWorkflowPayloadSummary,
@@ -38,13 +38,6 @@ export default function ApprovalsPage() {
 
     const { profile } = await getCurrentUserProfile();
     setUserRole(profile?.role || "");
-
-    if (!canApproveWorkflow(profile?.role || "")) {
-      setRequests([]);
-      setUsersMap({});
-      setLoading(false);
-      return;
-    }
 
     const { data, error: rpcError } = await supabase.rpc(
       "list_workflow_requests_secure",
@@ -123,21 +116,13 @@ export default function ApprovalsPage() {
     setActionLoading(false);
   }
 
-  if (!loading && !canApproveWorkflow(userRole)) {
-    return (
-      <Layout>
-        <h1>Approvals</h1>
-        <div className="alert-error">
-          Accès réservé aux rôles CEO, DAF et RESPONSABLE.
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <h1>Approvals</h1>
       <p style={{ marginBottom: 12 }}>Rôle connecté: {userRole || "-"}</p>
+      <div className="alert-warning" style={{ marginBottom: 12 }}>
+        Cette page affiche vos demandes et, selon votre rôle, les validations que vous pouvez traiter.
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12 }}>

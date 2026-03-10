@@ -15,10 +15,18 @@ import {
   normalizeVehicleInfo,
 } from "../../../lib/vehicleInfo";
 import {
-  APP_ROLES,
   getCurrentUserProfile,
-  hasOneRole,
 } from "../../../lib/accessControl";
+import {
+  canDirectlyChangePurchaseValue,
+  canRequestPurchaseValueChange,
+} from "../../../lib/workflowRequests";
+
+function normalizeNullableNumber(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
 
 export default function EditAsset() {
   const router = useRouter();
@@ -42,11 +50,8 @@ export default function EditAsset() {
   });
   const [vehicleInfo, setVehicleInfo] = useState(DEFAULT_VEHICLE_INFO);
 
-  const canEditPurchaseValue = hasOneRole(userRole, [
-    APP_ROLES.CEO,
-    APP_ROLES.DAF,
-    APP_ROLES.RESPONSABLE,
-  ]);
+  const canEditPurchaseValue = canRequestPurchaseValueChange(userRole);
+  const canEditPurchaseValueDirectly = canDirectlyChangePurchaseValue(userRole);
   const isVehicleAsset = isVehicleCategory(form.category);
 
   useEffect(() => {
@@ -142,8 +147,11 @@ export default function EditAsset() {
     setError("");
     setWarning("");
 
-    const normalizedPurchaseValue =
-      form.purchase_value === "" ? null : Number(form.purchase_value);
+    const normalizedPurchaseValue = normalizeNullableNumber(form.purchase_value);
+    const currentPurchaseValue = normalizeNullableNumber(
+      asset?.purchase_value ?? asset?.value ?? null
+    );
+    const purchaseValueChanged = normalizedPurchaseValue !== currentPurchaseValue;
     const normalizedVehicleDetails = isVehicleAsset
       ? normalizeVehicleInfo({
           ...vehicleInfo,
@@ -167,12 +175,44 @@ export default function EditAsset() {
       updatePayload.vehicle_details = normalizedVehicleDetails;
     }
 
-    if (canEditPurchaseValue) {
-      updatePayload.purchase_value = Number.isFinite(normalizedPurchaseValue)
-        ? normalizedPurchaseValue
-        : null;
-      // La valeur comptable historique suit la valeur d'achat dans l'app actuelle.
-      updatePayload.value = updatePayload.purchase_value;
+    if (purchaseValueChanged && !canEditPurchaseValue) {
+      setSaving(false);
+      setError("Vous n'êtes pas autorisé à soumettre ce changement de valeur d'achat.");
+      return;
+    }
+
+    let workflowReason = "";
+    if (purchaseValueChanged) {
+      if (canEditPurchaseValueDirectly) {
+        const promptValue = window.prompt(
+          "Motif du changement de valeur d'achat (optionnel, recommandé pour traçabilité)",
+          ""
+        );
+
+        if (promptValue === null) {
+          setSaving(false);
+          return;
+        }
+
+        workflowReason = promptValue.trim();
+      } else {
+        const promptValue = window.prompt(
+          "Motif du changement de valeur d'achat (obligatoire)",
+          ""
+        );
+
+        if (promptValue === null) {
+          setSaving(false);
+          return;
+        }
+
+        workflowReason = promptValue.trim();
+        if (!workflowReason) {
+          setSaving(false);
+          setError("Le motif du changement de valeur d'achat est obligatoire.");
+          return;
+        }
+      }
     }
 
     let finalPayload = { ...updatePayload };
@@ -199,14 +239,43 @@ export default function EditAsset() {
       }
     }
 
-    setSaving(false);
-
     if (error) {
+      setSaving(false);
       console.error(error);
       setError(`Erreur lors de la mise à jour: ${error.message}`);
-    } else {
-      router.push(`/assets/${id}`);
+      return;
     }
+
+    let flashMessage = "Actif mis à jour.";
+
+    if (purchaseValueChanged) {
+      const rpcName = canEditPurchaseValueDirectly
+        ? "update_asset_purchase_value_immediately"
+        : "request_asset_purchase_value_change";
+      const { error: workflowError } = await supabase.rpc(rpcName, {
+        p_asset_id: id,
+        p_new_purchase_value: normalizedPurchaseValue,
+        p_reason: workflowReason || null,
+      });
+
+      if (workflowError) {
+        setSaving(false);
+        setWarning(
+          canEditPurchaseValueDirectly
+            ? `Les autres modifications ont été enregistrées, mais la mise à jour directe de la valeur d'achat a échoué: ${workflowError.message}`
+            : `Les autres modifications ont été enregistrées, mais la demande de changement de valeur d'achat a échoué: ${workflowError.message}`
+        );
+        return;
+      }
+
+      flashMessage =
+        canEditPurchaseValueDirectly
+          ? "Les modifications ont été enregistrées. La valeur d'achat a été mise à jour directement par le CEO."
+          : "Les modifications ont été enregistrées. La nouvelle valeur d'achat a été envoyée en approbation au CEO.";
+    }
+
+    setSaving(false);
+    router.push(`/assets/${id}?flash=${encodeURIComponent(flashMessage)}`);
   };
 
   if (loading) {
@@ -239,6 +308,8 @@ export default function EditAsset() {
   const hasLegacyCategory =
     form.category &&
     !FIXED_ASSET_CATEGORIES.some((item) => item.value === form.category);
+  const allowedStatusOptions = ["EN_SERVICE", "EN_MAINTENANCE", "HS"];
+  const hasLegacyStatus = form.status && !allowedStatusOptions.includes(form.status);
 
   return (
     <Layout>
@@ -349,6 +420,11 @@ export default function EditAsset() {
                   Modification de la valeur d'achat réservée aux rôles CEO, DAF et RESPONSABLE.
                 </small>
               )}
+              {canEditPurchaseValue && (
+                <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+                  Toute modification de cette valeur crée désormais une demande d'approbation à 2 niveaux.
+                </small>
+              )}
             </div>
 
             <div className="form-field">
@@ -359,6 +435,11 @@ export default function EditAsset() {
                 value={form.status}
                 onChange={handleChange}
               >
+                {hasLegacyStatus && (
+                  <option value={form.status}>
+                    Statut existant: {form.status}
+                  </option>
+                )}
                 <option value="EN_SERVICE">En service</option>
                 <option value="EN_MAINTENANCE">En maintenance</option>
                 <option value="HS">Hors service</option>

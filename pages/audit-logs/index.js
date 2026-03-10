@@ -7,6 +7,7 @@ import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDire
 
 const ACTION_OPTIONS = [
   "ALL",
+  "ASSET_DELETE_DIRECT",
   "ASSET_DELETE",
   "INCIDENT_CLOSE",
   "MAINTENANCE_CLOSE",

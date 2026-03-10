@@ -3,7 +3,6 @@ import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/router";
 import {
   APP_ROLES,
-  canApproveWorkflow,
   getCurrentUserProfile,
   hasOneRole,
 } from "../lib/accessControl";
@@ -109,7 +108,7 @@ export default function Sidebar() {
 
   const canSeeAdmin = hasOneRole(userRole, [APP_ROLES.CEO]);
   const canSeeAudit = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
-  const canSeeApprovals = canApproveWorkflow(userRole);
+  const canSeeApprovals = true;
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", count: null },
