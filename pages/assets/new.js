@@ -13,6 +13,13 @@ import { fetchUserDirectoryList } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
 import { FIXED_ASSET_CATEGORIES } from "../../lib/assetCategories";
 import { ASSET_CONDITIONS } from "../../lib/assetConditions";
+import {
+  DEFAULT_VEHICLE_INFO,
+  INSURANCE_TYPE_OPTIONS,
+  VEHICLE_STATUS_OPTIONS,
+  isVehicleCategory,
+  normalizeVehicleInfo,
+} from "../../lib/vehicleInfo";
 
 export default function NewAsset() {
   const router = useRouter();
@@ -33,11 +40,13 @@ export default function NewAsset() {
   const [assignedToUserId, setAssignedToUserId] = useState("");
   const [assignedToName, setAssignedToName] = useState("");
   const [userOptions, setUserOptions] = useState([]);
+  const [vehicleInfo, setVehicleInfo] = useState(DEFAULT_VEHICLE_INFO);
 
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState("");
+  const isVehicleAsset = isVehicleCategory(category);
 
   const annualLinearAmort = useMemo(() => {
     const value = Number(purchaseValue);
@@ -96,6 +105,13 @@ export default function NewAsset() {
     );
   }
 
+  function handleVehicleInfoChange(field, value) {
+    setVehicleInfo((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -135,32 +151,57 @@ export default function NewAsset() {
         amortissement_degressive_coefficient: degressiveCoefficient,
         duration: years,
         value: purchaseVal,
+        vehicle_details: isVehicleAsset ? normalizeVehicleInfo(vehicleInfo) : null,
       };
 
-      let { data: createdAsset, error } = await supabase
-        .from("assets")
-        .insert([payload])
-        .select("id")
-        .single();
+      let createdAsset = null;
+      let error = null;
+      let insertPayload = { ...payload };
+      const fallbackWarnings = [];
 
-      if (error && String(error.message || "").toLowerCase().includes("assigned_to_name")) {
-        const fallbackPayload = { ...payload };
-        delete fallbackPayload.assigned_to_name;
-        const fallbackInsert = await supabase
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const insertResponse = await supabase
           .from("assets")
-          .insert([fallbackPayload])
+          .insert([insertPayload])
           .select("id")
           .single();
-        createdAsset = fallbackInsert.data;
-        error = fallbackInsert.error;
-        if (!fallbackInsert.error && assignedToName.trim()) {
-          setWarning(
-            "Actif cree, mais le nom libre d'attribution n'a pas ete sauvegarde. Execute la migration SQL de colonne assigned_to_name."
+
+        createdAsset = insertResponse.data;
+        error = insertResponse.error;
+        if (!error) break;
+
+        const errorMessage = String(error.message || "").toLowerCase();
+        let patched = false;
+
+        if (
+          errorMessage.includes("assigned_to_name") &&
+          Object.prototype.hasOwnProperty.call(insertPayload, "assigned_to_name")
+        ) {
+          delete insertPayload.assigned_to_name;
+          fallbackWarnings.push(
+            "Actif cree sans le nom libre d'attribution. Execute la migration SQL de colonne assigned_to_name."
           );
+          patched = true;
         }
+
+        if (
+          errorMessage.includes("vehicle_details") &&
+          Object.prototype.hasOwnProperty.call(insertPayload, "vehicle_details")
+        ) {
+          delete insertPayload.vehicle_details;
+          fallbackWarnings.push(
+            "Actif cree sans les informations véhicule. Execute la migration SQL de colonne vehicle_details."
+          );
+          patched = true;
+        }
+
+        if (!patched) break;
       }
 
       if (error) throw error;
+      if (fallbackWarnings.length) {
+        setWarning(Array.from(new Set(fallbackWarnings)).join(" "));
+      }
 
       if (attachmentFile && createdAsset?.id) {
         try {
@@ -335,6 +376,242 @@ export default function NewAsset() {
               <label>Durée (années)</label>
               <input type="number" className="input" value={amortYears} onChange={(e) => setAmortYears(e.target.value)} />
             </div>
+
+            {isVehicleAsset && (
+              <div className="vehicle-extra-section">
+                <h3>Informations véhicule</h3>
+                <p>
+                  Ce bloc est affiché uniquement pour les catégories Vehicule - Moto et Vehicule - Voiture.
+                </p>
+
+                <div className="vehicle-extra-grid">
+                  <div className="form-field">
+                    <label>Numéro d’immatriculation</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.registration_number || ""}
+                      onChange={(e) => handleVehicleInfoChange("registration_number", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Marque</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.brand || ""}
+                      onChange={(e) => handleVehicleInfoChange("brand", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Modèle</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.model || ""}
+                      onChange={(e) => handleVehicleInfoChange("model", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Cylindrée</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.engine_displacement || ""}
+                      onChange={(e) => handleVehicleInfoChange("engine_displacement", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Numéro de châssis</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.chassis_number || ""}
+                      onChange={(e) => handleVehicleInfoChange("chassis_number", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Couleur</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.color || ""}
+                      onChange={(e) => handleVehicleInfoChange("color", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <h4>Affectation</h4>
+                <div className="vehicle-extra-grid">
+                  <div className="form-field">
+                    <label>Nom de l’agent affecté</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.assigned_agent_name || ""}
+                      onChange={(e) => handleVehicleInfoChange("assigned_agent_name", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Contact agent</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.assigned_agent_contact || ""}
+                      onChange={(e) => handleVehicleInfoChange("assigned_agent_contact", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Matricule de l’agent</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.assigned_agent_id_number || ""}
+                      onChange={(e) => handleVehicleInfoChange("assigned_agent_id_number", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Fonction de l’agent</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.assigned_agent_function || ""}
+                      onChange={(e) => handleVehicleInfoChange("assigned_agent_function", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Zone / Région d’affectation</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.assignment_region || ""}
+                      onChange={(e) => handleVehicleInfoChange("assignment_region", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Statut de la moto</label>
+                    <select
+                      className="select"
+                      value={vehicleInfo.vehicle_operational_status || "DISPONIBLE"}
+                      onChange={(e) =>
+                        handleVehicleInfoChange("vehicle_operational_status", e.target.value)
+                      }
+                    >
+                      {VEHICLE_STATUS_OPTIONS.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-field">
+                    <label>Responsable hiérarchique</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.manager_name || ""}
+                      onChange={(e) => handleVehicleInfoChange("manager_name", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Contact responsable</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.manager_contact || ""}
+                      onChange={(e) => handleVehicleInfoChange("manager_contact", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <h4>Assurance et documents</h4>
+                <div className="vehicle-extra-grid">
+                  <div className="form-field">
+                    <label>Compagnie d’assurance</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.insurance_company || ""}
+                      onChange={(e) => handleVehicleInfoChange("insurance_company", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Type d’assurance</label>
+                    <select
+                      className="select"
+                      value={vehicleInfo.insurance_type || "TOUS_RISQUES"}
+                      onChange={(e) => handleVehicleInfoChange("insurance_type", e.target.value)}
+                    >
+                      {INSURANCE_TYPE_OPTIONS.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-field">
+                    <label>Numéro de police</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.policy_number || ""}
+                      onChange={(e) => handleVehicleInfoChange("policy_number", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Statut assurance</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.insurance_status || ""}
+                      onChange={(e) => handleVehicleInfoChange("insurance_status", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Date début assurance</label>
+                    <input
+                      className="input"
+                      type="date"
+                      value={vehicleInfo.insurance_start_date || ""}
+                      onChange={(e) => handleVehicleInfoChange("insurance_start_date", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Date expiration assurance</label>
+                    <input
+                      className="input"
+                      type="date"
+                      value={vehicleInfo.insurance_end_date || ""}
+                      onChange={(e) => handleVehicleInfoChange("insurance_end_date", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Carte grise (numéro)</label>
+                    <input
+                      className="input"
+                      value={vehicleInfo.registration_card_number || ""}
+                      onChange={(e) =>
+                        handleVehicleInfoChange("registration_card_number", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Carte grise (date)</label>
+                    <input
+                      className="input"
+                      type="date"
+                      value={vehicleInfo.registration_card_date || ""}
+                      onChange={(e) =>
+                        handleVehicleInfoChange("registration_card_date", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="form-field" style={{ gridColumn: "1 / -1" }}>
               <label>Description</label>

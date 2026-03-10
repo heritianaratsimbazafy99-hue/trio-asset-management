@@ -29,6 +29,13 @@ import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessCo
 import { formatMGA } from "../../lib/currency";
 import { getAssetCategoryLabel } from "../../lib/assetCategories";
 import { getAssetConditionLabel } from "../../lib/assetConditions";
+import {
+  INSURANCE_TYPE_OPTIONS,
+  VEHICLE_INFO_LABELS,
+  VEHICLE_STATUS_OPTIONS,
+  isVehicleCategory,
+  vehicleInfoValue,
+} from "../../lib/vehicleInfo";
 
 function safeText(value) {
   return String(value ?? "-")
@@ -57,6 +64,16 @@ function getHistoryAssignmentLabel(row, userIdField, nameField, usersMap) {
   if (fromUser && fromUser !== "-") return fromUser;
   return "-";
 }
+
+const INSURANCE_TYPE_LABEL_BY_VALUE = INSURANCE_TYPE_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.label;
+  return acc;
+}, {});
+
+const VEHICLE_STATUS_LABEL_BY_VALUE = VEHICLE_STATUS_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.label;
+  return acc;
+}, {});
 
 export default function AssetDetailPage() {
   const router = useRouter();
@@ -194,6 +211,17 @@ export default function AssetDetailPage() {
     APP_ROLES.DAF,
     APP_ROLES.RESPONSABLE,
   ]);
+  const isVehicleAsset = isVehicleCategory(asset?.category);
+  const vehicleDetails =
+    asset?.vehicle_details && typeof asset.vehicle_details === "object"
+      ? asset.vehicle_details
+      : {};
+  const insuranceTypeValue = vehicleInfoValue(vehicleDetails, "insurance_type", "");
+  const insuranceTypeLabel =
+    INSURANCE_TYPE_LABEL_BY_VALUE[insuranceTypeValue] || insuranceTypeValue || "-";
+  const vehicleStatusValue = vehicleInfoValue(vehicleDetails, "vehicle_operational_status", "");
+  const vehicleStatusLabel =
+    VEHICLE_STATUS_LABEL_BY_VALUE[vehicleStatusValue] || vehicleStatusValue || "-";
 
   const timelineItems = useMemo(() => {
     const incidentItems = incidents.map((item) => ({
@@ -574,6 +602,111 @@ export default function AssetDetailPage() {
           </button>
         </div>
       </div>
+
+      {isVehicleAsset && (
+        <div className="card">
+          <h3>Données véhicule (moto / voiture)</h3>
+
+          <div className="vehicle-detail-grid">
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.registration_number}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "registration_number")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.brand}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "brand")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.model}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "model")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.engine_displacement}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "engine_displacement")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.chassis_number}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "chassis_number")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.color}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "color")}</strong>
+            </div>
+          </div>
+
+          <h4 style={{ marginTop: 14, marginBottom: 8 }}>Affectation</h4>
+          <div className="vehicle-detail-grid">
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.assigned_agent_name}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "assigned_agent_name")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.assigned_agent_contact}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "assigned_agent_contact")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.assigned_agent_id_number}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "assigned_agent_id_number")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.assigned_agent_function}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "assigned_agent_function")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.assignment_region}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "assignment_region")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.vehicle_operational_status}</span>
+              <strong>{vehicleStatusLabel}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.manager_name}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "manager_name")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.manager_contact}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "manager_contact")}</strong>
+            </div>
+          </div>
+
+          <h4 style={{ marginTop: 14, marginBottom: 8 }}>Assurance et documents</h4>
+          <div className="vehicle-detail-grid">
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.insurance_company}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "insurance_company")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.insurance_type}</span>
+              <strong>{insuranceTypeLabel}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.policy_number}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "policy_number")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.insurance_start_date}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "insurance_start_date")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.insurance_end_date}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "insurance_end_date")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.insurance_status}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "insurance_status")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.registration_card_number}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "registration_card_number")}</strong>
+            </div>
+            <div className="vehicle-detail-item">
+              <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.registration_card_date}</span>
+              <strong>{vehicleInfoValue(vehicleDetails, "registration_card_date")}</strong>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="chart-grid">
         <div className="card">
