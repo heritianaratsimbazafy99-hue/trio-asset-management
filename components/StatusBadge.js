@@ -6,8 +6,10 @@ export default function StatusBadge({ status }) {
     EN_SERVICE: "en-service",
     HS: "hs",
     EN_MAINTENANCE: "maintenance",
+    REBUS: "rebus",
     OUVERT: "ouvert",
     EN_COURS: "en-cours",
+    EN_ATTENTE_VALIDATION: "pending",
   };
 
   const cls = map[s] || "";

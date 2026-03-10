@@ -15,6 +15,7 @@ const REQUIRED_FILES = [
   "sql/security_admin_audit_upgrade.sql",
   "sql/feature_audit_assignment_history.sql",
   "sql/feature_workflow_approvals.sql",
+  "sql/feature_maintenance_rebus_workflows.sql",
   "sql/predeploy_hardening.sql",
   "sql/step_1_security_integrity_hardening.sql",
   "sql/step_2_secure_search_and_dashboard_rpc.sql",

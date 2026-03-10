@@ -29,9 +29,9 @@ export default function NewMaintenance() {
   async function fetchAssets() {
     const { data } = await supabase
       .from("assets")
-      .select("id,name,code")
+      .select("id,name,code,status")
       .order("name", { ascending: true });
-    setAssets(data || []);
+    setAssets((data || []).filter((item) => String(item.status || "").toUpperCase() !== "REBUS"));
   }
 
   const selectedAssetId = useMemo(() => assetId || String(asset_id || ""), [assetId, asset_id]);
@@ -53,26 +53,14 @@ export default function NewMaintenance() {
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-      .from("maintenance")
-      .insert([
-        {
-          asset_id: selectedAssetId,
-          title,
-          description,
-          cost: Number(cost || 0),
-          priority,
-          due_date: dueDate || null,
-          started_at: new Date().toISOString(),
-          status: "PLANIFIEE",
-          is_completed: false,
-          reported_by: user?.id || null,
-        },
-      ]);
+    const { error } = await supabase.rpc("request_maintenance_start", {
+      p_asset_id: selectedAssetId,
+      p_title: title.trim(),
+      p_description: description.trim() || null,
+      p_cost: Number(cost || 0),
+      p_priority: priority,
+      p_due_date: dueDate || null,
+    });
 
     if (error) {
       setError(error.message);
@@ -80,12 +68,19 @@ export default function NewMaintenance() {
       return;
     }
 
-    router.push(`/assets/${selectedAssetId}`);
+    router.push(
+      `/assets/${selectedAssetId}?flash=${encodeURIComponent(
+        "Ticket maintenance créé. Statut: en attente de validation."
+      )}`
+    );
   }
 
   return (
     <Layout>
       <h1>Planifier une maintenance</h1>
+      <div className="alert-warning" style={{ marginBottom: 14 }}>
+        Toute nouvelle maintenance passe désormais par un ticket puis par une validation avant passage en cours.
+      </div>
 
       {error && <div className="alert-error">{error}</div>}
 

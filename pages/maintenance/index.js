@@ -14,8 +14,34 @@ import {
 } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
 
+function getMaintenanceDisplayStatus(item) {
+  const approvalStatus = String(item?.approval_status || "").toUpperCase();
+  const status = String(item?.status || "").toUpperCase();
+
+  if (approvalStatus === "REJETEE") return "Rejetée";
+  if (approvalStatus === "EN_ATTENTE_VALIDATION" || status === "EN_ATTENTE_VALIDATION") {
+    return "En attente de validation";
+  }
+  if (item?.is_completed || status === "TERMINEE") return "Terminée";
+  if (status === "EN_COURS") return "En cours";
+  return "Planifiée";
+}
+
+function getMaintenanceStatusClassName(item) {
+  const approvalStatus = String(item?.approval_status || "").toUpperCase();
+  const status = String(item?.status || "").toUpperCase();
+
+  if (approvalStatus === "REJETEE") return "badge-danger";
+  if (approvalStatus === "EN_ATTENTE_VALIDATION" || status === "EN_ATTENTE_VALIDATION") {
+    return "badge-warning";
+  }
+  if (item?.is_completed || status === "TERMINEE") return "badge-success";
+  return "badge-warning";
+}
+
 export default function MaintenancePage() {
   const [maintenance, setMaintenance] = useState([]);
+  const [replacementAssets, setReplacementAssets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [error, setError] = useState("");
@@ -27,16 +53,23 @@ export default function MaintenancePage() {
   ]);
 
   async function fetchData() {
-    const [{ data }, { profile }] = await Promise.all([
+    const [{ data }, { data: replacementData }, { profile }] = await Promise.all([
       supabase
       .from("maintenance")
       .select("*, assets(name)")
       .order("created_at", { ascending: false }),
+      supabase
+        .from("assets")
+        .select("id, name, code, organisations(name)")
+        .eq("status", "REBUS")
+        .order("updated_at", { ascending: false })
+        .limit(20),
       getCurrentUserProfile(),
     ]);
 
     setUserRole(profile?.role || "");
     setMaintenance(data || []);
+    setReplacementAssets(replacementData || []);
     const ids = (data || []).flatMap((item) => [item.reported_by, item.completed_by]).filter(Boolean);
     const map = await fetchUserDirectoryMapByIds(ids);
     setUsersMap(map);
@@ -138,15 +171,16 @@ export default function MaintenancePage() {
                   </td>
 
                   <td className="cell-center cell-nowrap">
-                    {m.is_completed ? (
-                      <span className="badge-success">Terminée</span>
-                    ) : (
-                      <span className="badge-warning">Planifiée</span>
-                    )}
+                    <span className={getMaintenanceStatusClassName(m)}>
+                      {getMaintenanceDisplayStatus(m)}
+                    </span>
                   </td>
 
                   <td>
-                    {!m.is_completed && canCloseMaintenance && (
+                    {!m.is_completed &&
+                      String(m.approval_status || "").toUpperCase() !== "REJETEE" &&
+                      String(m.status || "").toUpperCase() !== "EN_ATTENTE_VALIDATION" &&
+                      canCloseMaintenance && (
                       <button
                         className="btn-success"
                         disabled={loading}
@@ -155,13 +189,50 @@ export default function MaintenancePage() {
                         Marquer terminée
                       </button>
                     )}
-                    {!m.is_completed && !canCloseMaintenance && <span>-</span>}
+                    {!m.is_completed &&
+                      String(m.approval_status || "").toUpperCase() !== "REJETEE" &&
+                      String(m.status || "").toUpperCase() !== "EN_ATTENTE_VALIDATION" &&
+                      !canCloseMaintenance && <span>-</span>}
+                    {(String(m.approval_status || "").toUpperCase() === "REJETEE" ||
+                      String(m.status || "").toUpperCase() === "EN_ATTENTE_VALIDATION") && (
+                      <span>-</span>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3>Actifs à remplacer (rebus)</h3>
+        {replacementAssets.length === 0 ? (
+          <p>Aucun actif en rebus.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Actif</th>
+                <th>Code</th>
+                <th>Société</th>
+              </tr>
+            </thead>
+            <tbody>
+              {replacementAssets.map((asset) => (
+                <tr key={`replacement-${asset.id}`}>
+                  <td>
+                    <Link className="dashboard-link" href={`/assets/${asset.id}`}>
+                      {asset.name || "-"}
+                    </Link>
+                  </td>
+                  <td>{asset.code || "-"}</td>
+                  <td>{asset.organisations?.name || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </Layout>
   );

@@ -470,6 +470,11 @@ h1 {
   color: #92400e;
 }
 
+.badge.rebus {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .badge.ouvert {
   background: #fee2e2;
   color: #991b1b;
@@ -480,11 +485,17 @@ h1 {
   color: #1e3a8a;
 }
 
+.badge.pending {
+  background: #fff7d6;
+  color: #7c4a03;
+}
+
 .btn-primary,
 .btn-warning,
 .btn-ghost,
 .btn-secondary,
-.btn-success {
+.btn-success,
+.btn-danger {
   padding: 10px 16px;
   border-radius: 10px;
   border: none;
@@ -512,6 +523,11 @@ h1 {
   color: #ffffff;
 }
 
+.btn-danger {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--brand);
@@ -521,7 +537,8 @@ h1 {
 .btn-warning:hover,
 .btn-ghost:hover,
 .btn-secondary:hover,
-.btn-success:hover {
+.btn-success:hover,
+.btn-danger:hover {
   opacity: 0.92;
 }
 
