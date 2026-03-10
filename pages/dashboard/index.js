@@ -21,6 +21,11 @@ import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
 import { formatMGA } from "../../lib/currency";
+import {
+  DATA_HEALTH_ISSUES,
+  canFixDataHealthIssue,
+  getDataHealthIssueConfig,
+} from "../../lib/dataHealth";
 
 const PERIOD_OPTIONS = [
   { value: "30D", label: "30 jours" },
@@ -59,6 +64,69 @@ function sanitizeCsvCell(value) {
   return raw;
 }
 
+function getDefaultDeadlineValue() {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildHealthDraft(row, selectedCompanyId = "ALL", organisations = []) {
+  const fallbackCompanyId =
+    selectedCompanyId && selectedCompanyId !== "ALL"
+      ? selectedCompanyId
+      : organisations[0]?.id || "";
+  const fallbackIncidentTitle = row?.asset_name
+    ? `Incident ${row.asset_name}`
+    : "Incident sans titre";
+
+  switch (row?.issue_type) {
+    case "MISSING_VALUE":
+      return { purchaseValue: "" };
+    case "MISSING_COMPANY":
+      return { companyId: fallbackCompanyId };
+    case "MISSING_AMORTIZATION":
+      return { amortissementType: "LINEAIRE", amortissementDuration: "5" };
+    case "MAINTENANCE_MISSING_DEADLINE":
+      return { dueDate: getDefaultDeadlineValue() };
+    case "INCIDENT_MISSING_TITLE":
+      return { title: fallbackIncidentTitle };
+    default:
+      return {};
+  }
+}
+
+function buildHealthDraftMap(rows, selectedCompanyId = "ALL", organisations = []) {
+  return (rows || []).reduce((acc, row) => {
+    acc[row.record_id] = buildHealthDraft(row, selectedCompanyId, organisations);
+    return acc;
+  }, {});
+}
+
+function formatHealthDetailValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (Array.isArray(value)) {
+    return value.length ? value.join(", ") : "-";
+  }
+  if (typeof value === "boolean") {
+    return value ? "Oui" : "Non";
+  }
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+
+function getHealthDetailEntries(row) {
+  if (!row?.details || typeof row.details !== "object") return [];
+  return Object.entries(row.details).filter(
+    ([, value]) => value !== null && value !== undefined && value !== ""
+  );
+}
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -74,6 +142,13 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
   const [userRole, setUserRole] = useState("");
+  const [healthIssueType, setHealthIssueType] = useState("");
+  const [healthRows, setHealthRows] = useState([]);
+  const [healthDrafts, setHealthDrafts] = useState({});
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState("");
+  const [healthMessage, setHealthMessage] = useState("");
+  const [healthBusyId, setHealthBusyId] = useState("");
 
   const [selectedCompanyId, setSelectedCompanyId] = useState("ALL");
   const [selectedPeriod, setSelectedPeriod] = useState("12M");
@@ -82,6 +157,12 @@ export default function Dashboard() {
 
   const canCloseOps = hasOneRole(userRole, [
     APP_ROLES.CEO,
+    APP_ROLES.RESPONSABLE_MAINTENANCE,
+  ]);
+  const canReadDataHealth = hasOneRole(userRole, [
+    APP_ROLES.CEO,
+    APP_ROLES.DAF,
+    APP_ROLES.RESPONSABLE,
     APP_ROLES.RESPONSABLE_MAINTENANCE,
   ]);
 
@@ -103,6 +184,28 @@ export default function Dashboard() {
     if (!contextReady) return;
     fetchSummary();
   }, [selectedCompanyId, selectedPeriod, selectedCategory, riskPage, contextReady]);
+
+  useEffect(() => {
+    if (!contextReady || !healthIssueType || !canReadDataHealth) return;
+    fetchHealthIssues(healthIssueType);
+  }, [
+    selectedCompanyId,
+    selectedPeriod,
+    selectedCategory,
+    contextReady,
+    healthIssueType,
+    canReadDataHealth,
+  ]);
+
+  useEffect(() => {
+    if (canReadDataHealth) return;
+    setHealthIssueType("");
+    setHealthRows([]);
+    setHealthDrafts({});
+    setHealthError("");
+    setHealthMessage("");
+    setHealthBusyId("");
+  }, [canReadDataHealth]);
 
   async function bootstrap() {
     setLoading(true);
@@ -217,6 +320,11 @@ export default function Dashboard() {
   const amortizationKpis = summary?.amortization_kpis || {};
   const actionsOpenIncidents = summary?.actions_open_incidents || [];
   const actionsOverdueMaintenance = summary?.actions_overdue_maintenance || [];
+  const healthSummaryRows = DATA_HEALTH_ISSUES.map((item) => ({
+    ...item,
+    count: normalizeNumber(quality[item.qualityKey]),
+  }));
+  const activeHealthConfig = getDataHealthIssueConfig(healthIssueType);
 
   const topRisksChartData = useMemo(() => {
     return (topRisksChart || []).slice(0, 10).map((item, index) => {
@@ -429,6 +537,224 @@ export default function Dashboard() {
     }
 
     setActionBusy(false);
+  }
+
+  async function fetchHealthIssues(issueType, options = {}) {
+    const targetIssueType = issueType || healthIssueType;
+    const preserveMessage = Boolean(options.preserveMessage);
+
+    if (!targetIssueType || !canReadDataHealth) return;
+
+    setHealthLoading(true);
+    setHealthError("");
+    if (!preserveMessage) {
+      setHealthMessage("");
+    }
+
+    const { data, error: rpcError } = await supabase.rpc("list_data_health_issues_secure", {
+      p_issue_type: targetIssueType,
+      p_company_id: selectedCompanyId === "ALL" ? null : selectedCompanyId,
+      p_category: selectedCategory === "ALL" ? null : selectedCategory,
+      p_period: selectedPeriod,
+      p_limit: 50,
+      p_offset: 0,
+    });
+
+    if (rpcError) {
+      setHealthRows([]);
+      setHealthDrafts({});
+      setHealthError(rpcError.message);
+      setHealthLoading(false);
+      return;
+    }
+
+    const rows = data || [];
+    setHealthIssueType(targetIssueType);
+    setHealthRows(rows);
+    setHealthDrafts(buildHealthDraftMap(rows, selectedCompanyId, organisations));
+    setHealthLoading(false);
+  }
+
+  function updateHealthDraft(recordId, field, value) {
+    setHealthDrafts((current) => ({
+      ...current,
+      [recordId]: {
+        ...(current[recordId] || {}),
+        [field]: value,
+      },
+    }));
+  }
+
+  async function applyHealthFix(row) {
+    if (!row || !canFixDataHealthIssue(userRole, row.issue_type)) return;
+
+    const draft =
+      healthDrafts[row.record_id] || buildHealthDraft(row, selectedCompanyId, organisations);
+    let rpcName = "";
+    let payload = {};
+
+    if (row.issue_type === "MISSING_VALUE") {
+      const purchaseValue = Number(draft.purchaseValue);
+      if (!Number.isFinite(purchaseValue) || purchaseValue <= 0) {
+        setHealthError("Saisis une valeur d'achat valide.");
+        return;
+      }
+      rpcName = "fix_data_health_asset_purchase_value";
+      payload = {
+        p_asset_id: row.asset_id,
+        p_purchase_value: purchaseValue,
+      };
+    } else if (row.issue_type === "MISSING_COMPANY") {
+      if (!draft.companyId) {
+        setHealthError("Choisis une société de rattachement.");
+        return;
+      }
+      rpcName = "fix_data_health_asset_company";
+      payload = {
+        p_asset_id: row.asset_id,
+        p_company_id: draft.companyId,
+      };
+    } else if (row.issue_type === "MISSING_AMORTIZATION") {
+      const duration = Number(draft.amortissementDuration);
+      if (!draft.amortissementType || !Number.isInteger(duration) || duration <= 0) {
+        setHealthError("Renseigne un type et une durée d'amortissement valides.");
+        return;
+      }
+      rpcName = "fix_data_health_asset_amortization";
+      payload = {
+        p_asset_id: row.asset_id,
+        p_amortissement_type: draft.amortissementType,
+        p_amortissement_duration: duration,
+      };
+    } else if (row.issue_type === "MAINTENANCE_MISSING_DEADLINE") {
+      if (!draft.dueDate) {
+        setHealthError("Choisis une deadline de maintenance.");
+        return;
+      }
+      rpcName = "fix_data_health_maintenance_deadline";
+      payload = {
+        p_maintenance_id: row.record_id,
+        p_due_date: draft.dueDate,
+      };
+    } else if (row.issue_type === "INCIDENT_MISSING_TITLE") {
+      const title = String(draft.title || "").trim();
+      if (!title) {
+        setHealthError("Saisis un titre d'incident.");
+        return;
+      }
+      rpcName = "fix_data_health_incident_title";
+      payload = {
+        p_incident_id: row.record_id,
+        p_title: title,
+      };
+    } else {
+      return;
+    }
+
+    setHealthBusyId(row.record_id);
+    setHealthError("");
+    setHealthMessage("");
+
+    const { error: rpcError } = await supabase.rpc(rpcName, payload);
+
+    if (rpcError) {
+      setHealthError(rpcError.message);
+      setHealthBusyId("");
+      return;
+    }
+
+    setHealthMessage("Correction enregistrée et auditée.");
+    await fetchSummary();
+    await fetchHealthIssues(healthIssueType || row.issue_type, { preserveMessage: true });
+    setHealthBusyId("");
+  }
+
+  function renderHealthFixFields(row) {
+    const draft =
+      healthDrafts[row.record_id] || buildHealthDraft(row, selectedCompanyId, organisations);
+
+    if (row.issue_type === "MISSING_VALUE") {
+      return (
+        <input
+          className="input"
+          type="number"
+          min="0"
+          placeholder="Valeur d'achat MGA"
+          value={draft.purchaseValue || ""}
+          onChange={(e) => updateHealthDraft(row.record_id, "purchaseValue", e.target.value)}
+        />
+      );
+    }
+
+    if (row.issue_type === "MISSING_COMPANY") {
+      return (
+        <select
+          className="select"
+          value={draft.companyId || ""}
+          onChange={(e) => updateHealthDraft(row.record_id, "companyId", e.target.value)}
+        >
+          <option value="">Sélectionner une société</option>
+          {organisations.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (row.issue_type === "MISSING_AMORTIZATION") {
+      return (
+        <div style={{ display: "grid", gap: 8 }}>
+          <select
+            className="select"
+            value={draft.amortissementType || "LINEAIRE"}
+            onChange={(e) =>
+              updateHealthDraft(row.record_id, "amortissementType", e.target.value)
+            }
+          >
+            <option value="LINEAIRE">Linéaire</option>
+            <option value="DEGRESSIF">Dégressif</option>
+          </select>
+          <input
+            className="input"
+            type="number"
+            min="1"
+            max="50"
+            placeholder="Durée (années)"
+            value={draft.amortissementDuration || ""}
+            onChange={(e) =>
+              updateHealthDraft(row.record_id, "amortissementDuration", e.target.value)
+            }
+          />
+        </div>
+      );
+    }
+
+    if (row.issue_type === "MAINTENANCE_MISSING_DEADLINE") {
+      return (
+        <input
+          className="input"
+          type="date"
+          value={draft.dueDate || ""}
+          onChange={(e) => updateHealthDraft(row.record_id, "dueDate", e.target.value)}
+        />
+      );
+    }
+
+    if (row.issue_type === "INCIDENT_MISSING_TITLE") {
+      return (
+        <input
+          className="input"
+          type="text"
+          placeholder="Titre incident"
+          value={draft.title || ""}
+          onChange={(e) => updateHealthDraft(row.record_id, "title", e.target.value)}
+        />
+      );
+    }
+
+    return <span>-</span>;
   }
 
   if (loading) {
@@ -757,31 +1083,156 @@ export default function Dashboard() {
             <tr>
               <th>Contrôle</th>
               <th>Volume</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Actifs sans valeur</td>
-              <td>{normalizeNumber(quality.missing_value)}</td>
-            </tr>
-            <tr>
-              <td>Actifs sans société</td>
-              <td>{normalizeNumber(quality.missing_company)}</td>
-            </tr>
-            <tr>
-              <td>Amortissement incomplet</td>
-              <td>{normalizeNumber(quality.missing_amortization)}</td>
-            </tr>
-            <tr>
-              <td>Maintenance sans deadline</td>
-              <td>{normalizeNumber(quality.maintenance_missing_deadline)}</td>
-            </tr>
-            <tr>
-              <td>Incidents sans titre</td>
-              <td>{normalizeNumber(quality.incidents_missing_title)}</td>
-            </tr>
+            {healthSummaryRows.map((item) => {
+              const isActive = item.issueType === healthIssueType;
+              return (
+                <tr key={item.issueType}>
+                  <td>
+                    <strong>{item.label}</strong>
+                    <div style={{ color: "#64748b", fontSize: 13 }}>{item.description}</div>
+                  </td>
+                  <td>{item.count}</td>
+                  <td>
+                    {canReadDataHealth ? (
+                      <button
+                        className={isActive ? "btn-primary" : "btn-secondary"}
+                        disabled={(item.count <= 0 && !isActive) || healthLoading}
+                        onClick={() => {
+                          if (isActive) {
+                            fetchHealthIssues(item.issueType);
+                            return;
+                          }
+                          setHealthError("");
+                          setHealthMessage("");
+                          setHealthIssueType(item.issueType);
+                        }}
+                      >
+                        {isActive ? "Actualiser le détail" : "Voir le détail"}
+                      </button>
+                    ) : (
+                      <span style={{ color: "#64748b", fontSize: 13 }}>
+                        Détail réservé aux rôles opérationnels
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+
+        {canReadDataHealth && healthIssueType && (
+          <div style={{ marginTop: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+                marginBottom: 12,
+              }}
+            >
+              <div>
+                <h4 style={{ marginBottom: 4 }}>{activeHealthConfig?.label || healthIssueType}</h4>
+                <p style={{ margin: 0, color: "#64748b" }}>
+                  {activeHealthConfig?.description || "Détail des anomalies détectées."}
+                </p>
+              </div>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setHealthIssueType("");
+                  setHealthRows([]);
+                  setHealthDrafts({});
+                  setHealthError("");
+                  setHealthMessage("");
+                }}
+              >
+                Fermer
+              </button>
+            </div>
+
+            {healthMessage && <div className="alert-success">{healthMessage}</div>}
+            {healthError && <div className="alert-error">{healthError}</div>}
+            {healthLoading ? (
+              <p>Chargement des anomalies...</p>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Enregistrement</th>
+                    <th>Détails</th>
+                    <th>Correction</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {healthRows.map((row) => {
+                    const canFix = canFixDataHealthIssue(userRole, row.issue_type);
+                    const detailEntries = getHealthDetailEntries(row);
+                    return (
+                      <tr key={`${row.issue_type}-${row.record_id}`}>
+                        <td>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            <strong>{row.label || row.asset_name || "-"}</strong>
+                            <span>Société: {row.company_name || "-"}</span>
+                            {row.asset_id ? (
+                              <Link className="dashboard-link" href={`/assets/${row.asset_id}`}>
+                                Ouvrir l'actif
+                              </Link>
+                            ) : (
+                              <span>Type: {row.entity_type || "-"}</span>
+                            )}
+                            <span>Créé le: {formatDate(row.created_at)}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {detailEntries.length ? (
+                            <div style={{ display: "grid", gap: 6 }}>
+                              {detailEntries.map(([key, value]) => (
+                                <div key={`${row.record_id}-${key}`}>
+                                  <strong>{key}:</strong> {formatHealthDetailValue(value)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span>-</span>
+                          )}
+                        </td>
+                        <td>{renderHealthFixFields(row)}</td>
+                        <td>
+                          {canFix ? (
+                            <button
+                              className="btn-warning"
+                              disabled={healthBusyId === row.record_id}
+                              onClick={() => applyHealthFix(row)}
+                            >
+                              {healthBusyId === row.record_id ? "Correction..." : "Corriger"}
+                            </button>
+                          ) : (
+                            <span style={{ color: "#64748b", fontSize: 13 }}>
+                              Lecture seule
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {healthRows.length === 0 && (
+                    <tr>
+                      <td colSpan={4}>Aucune anomalie sur ce contrôle pour les filtres courants.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="card">
