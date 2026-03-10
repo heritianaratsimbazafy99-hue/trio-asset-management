@@ -33,6 +33,7 @@ import {
   INSURANCE_TYPE_OPTIONS,
   VEHICLE_INFO_LABELS,
   VEHICLE_STATUS_OPTIONS,
+  insuranceStatusLabel,
   isVehicleCategory,
   vehicleInfoValue,
 } from "../../lib/vehicleInfo";
@@ -222,6 +223,7 @@ export default function AssetDetailPage() {
   const vehicleStatusValue = vehicleInfoValue(vehicleDetails, "vehicle_operational_status", "");
   const vehicleStatusLabel =
     VEHICLE_STATUS_LABEL_BY_VALUE[vehicleStatusValue] || vehicleStatusValue || "-";
+  const insuranceStatus = insuranceStatusLabel(vehicleInfoValue(vehicleDetails, "insurance_status", ""));
 
   const timelineItems = useMemo(() => {
     const incidentItems = incidents.map((item) => ({
@@ -694,7 +696,7 @@ export default function AssetDetailPage() {
             </div>
             <div className="vehicle-detail-item">
               <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.insurance_status}</span>
-              <strong>{vehicleInfoValue(vehicleDetails, "insurance_status")}</strong>
+              <strong>{insuranceStatus}</strong>
             </div>
             <div className="vehicle-detail-item">
               <span className="vehicle-detail-label">{VEHICLE_INFO_LABELS.registration_card_number}</span>

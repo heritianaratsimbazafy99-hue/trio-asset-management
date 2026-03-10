@@ -14,10 +14,12 @@ import { formatMGA } from "../../lib/currency";
 import { FIXED_ASSET_CATEGORIES } from "../../lib/assetCategories";
 import { ASSET_CONDITIONS } from "../../lib/assetConditions";
 import {
+  computeInsuranceStatusByDates,
   DEFAULT_VEHICLE_INFO,
   INSURANCE_TYPE_OPTIONS,
   VEHICLE_STATUS_OPTIONS,
   isVehicleCategory,
+  insuranceStatusLabel,
   normalizeVehicleInfo,
 } from "../../lib/vehicleInfo";
 
@@ -47,6 +49,20 @@ export default function NewAsset() {
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState("");
   const isVehicleAsset = isVehicleCategory(category);
+
+  useEffect(() => {
+    if (!isVehicleAsset) return;
+
+    const nextStatus = computeInsuranceStatusByDates(
+      vehicleInfo.insurance_start_date,
+      vehicleInfo.insurance_end_date
+    );
+
+    setVehicleInfo((prev) => {
+      if ((prev.insurance_status || "INACTIVE") === nextStatus) return prev;
+      return { ...prev, insurance_status: nextStatus };
+    });
+  }, [isVehicleAsset, vehicleInfo.insurance_start_date, vehicleInfo.insurance_end_date]);
 
   const annualLinearAmort = useMemo(() => {
     const value = Number(purchaseValue);
@@ -128,6 +144,16 @@ export default function NewAsset() {
       const amortAnnual = purchaseVal && years > 0 ? purchaseVal / years : null;
       const degressiveCoefficient = getDegressiveCoefficient(years);
       const degressiveRate = years > 0 ? (degressiveCoefficient / years) * 100 : null;
+      const computedInsuranceStatus = computeInsuranceStatusByDates(
+        vehicleInfo.insurance_start_date,
+        vehicleInfo.insurance_end_date
+      );
+      const normalizedVehicleDetails = isVehicleAsset
+        ? normalizeVehicleInfo({
+            ...vehicleInfo,
+            insurance_status: computedInsuranceStatus,
+          })
+        : null;
 
       const payload = {
         name,
@@ -151,7 +177,7 @@ export default function NewAsset() {
         amortissement_degressive_coefficient: degressiveCoefficient,
         duration: years,
         value: purchaseVal,
-        vehicle_details: isVehicleAsset ? normalizeVehicleInfo(vehicleInfo) : null,
+        vehicle_details: normalizedVehicleDetails,
       };
 
       let createdAsset = null;
@@ -562,9 +588,13 @@ export default function NewAsset() {
                     <label>Statut assurance</label>
                     <input
                       className="input"
-                      value={vehicleInfo.insurance_status || ""}
-                      onChange={(e) => handleVehicleInfoChange("insurance_status", e.target.value)}
+                      value={insuranceStatusLabel(vehicleInfo.insurance_status)}
+                      readOnly
+                      disabled
                     />
+                    <small style={{ display: "block", marginTop: 6, color: "#5f6f83" }}>
+                      Calcul automatique selon date du jour, date de début et date d'expiration.
+                    </small>
                   </div>
 
                   <div className="form-field">
