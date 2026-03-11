@@ -5,7 +5,10 @@ import { supabase } from "../../lib/supabaseClient";
 import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
 import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDirectory";
 import {
+  buildAdvancedNotificationPreferencePayload,
   buildNotificationPreferencePayload,
+  getAdvancedNotificationPreferenceFields,
+  NOTIFICATION_ADVANCED_PREFERENCE_DEFINITIONS,
   NOTIFICATION_PREFERENCE_DEFINITIONS,
   NOTIFICATION_PREFERENCE_FIELDS,
   getNotificationStatusClassName,
@@ -28,6 +31,14 @@ function normalizeBody(value) {
 function emitSidebarRefresh() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event("trio-sidebar-refresh"));
+}
+
+function normalizePreferencesRow(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    advanced_preferences: buildAdvancedNotificationPreferencePayload(row),
+  };
 }
 
 export default function NotificationsPage() {
@@ -87,7 +98,7 @@ export default function NotificationsPage() {
   async function fetchPreferences() {
     setPreferencesLoading(true);
 
-    const { data, error: rpcError } = await supabase.rpc("get_my_notification_preferences");
+    const { data, error: rpcError } = await supabase.rpc("get_my_notification_preferences_advanced");
 
     if (rpcError) {
       setError(rpcError.message);
@@ -97,7 +108,7 @@ export default function NotificationsPage() {
     }
 
     const row = Array.isArray(data) ? data[0] : data;
-    setPreferences(row || null);
+    setPreferences(normalizePreferencesRow(row));
     if (row?.user_role) {
       setUserRole(row.user_role);
     }
@@ -147,6 +158,19 @@ export default function NotificationsPage() {
     }));
   }
 
+  function toggleAdvancedPreference(key, channel) {
+    const fields = getAdvancedNotificationPreferenceFields(key);
+    const field = channel === "email" ? fields.email : fields.app;
+
+    setPreferences((previous) => ({
+      ...(previous || {}),
+      advanced_preferences: {
+        ...(previous?.advanced_preferences || {}),
+        [field]: !previous?.advanced_preferences?.[field],
+      },
+    }));
+  }
+
   async function savePreferences() {
     if (!preferences) return;
     setPreferencesSaving(true);
@@ -154,7 +178,10 @@ export default function NotificationsPage() {
     setMessage("");
 
     const payload = buildNotificationPreferencePayload(preferences);
-    const { data, error: rpcError } = await supabase.rpc("update_my_notification_preferences", {
+    const advancedPayload = buildAdvancedNotificationPreferencePayload(preferences);
+    const { data, error: rpcError } = await supabase.rpc(
+      "update_my_notification_preferences_advanced",
+      {
       p_app_workflow_pending: payload.app_workflow_pending,
       p_app_workflow_approved: payload.app_workflow_approved,
       p_app_workflow_rejected: payload.app_workflow_rejected,
@@ -165,6 +192,7 @@ export default function NotificationsPage() {
       p_email_workflow_rejected: payload.email_workflow_rejected,
       p_email_workflow_failed: payload.email_workflow_failed,
       p_email_incident_alert: payload.email_incident_alert,
+      p_advanced_preferences: advancedPayload,
     });
 
     if (rpcError) {
@@ -172,7 +200,7 @@ export default function NotificationsPage() {
     } else {
       const row = Array.isArray(data) ? data[0] : data;
       if (row) {
-        setPreferences(row);
+        setPreferences(normalizePreferencesRow(row));
       }
       setMessage("Préférences de notifications mises à jour.");
       await fetchNotifications();
@@ -257,6 +285,40 @@ export default function NotificationsPage() {
                       className="notification-toggle"
                       checked={Boolean(preferences?.[fields.email])}
                       onChange={() => togglePreference(fields.email)}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+
+            <div className="notification-preferences-head" style={{ marginTop: 16 }}>
+              <span>Workflow fin</span>
+              <span>Application</span>
+              <span>Email</span>
+            </div>
+
+            {NOTIFICATION_ADVANCED_PREFERENCE_DEFINITIONS.map((definition) => {
+              const fields = getAdvancedNotificationPreferenceFields(definition.key);
+              return (
+                <div key={definition.key} className="notification-preference-row">
+                  <div className="notification-preference-copy">
+                    <h4>{definition.title}</h4>
+                    <p>{definition.description}</p>
+                  </div>
+                  <label className="notification-toggle-cell">
+                    <input
+                      type="checkbox"
+                      className="notification-toggle"
+                      checked={Boolean(preferences?.advanced_preferences?.[fields.app])}
+                      onChange={() => toggleAdvancedPreference(definition.key, "app")}
+                    />
+                  </label>
+                  <label className="notification-toggle-cell">
+                    <input
+                      type="checkbox"
+                      className="notification-toggle"
+                      checked={Boolean(preferences?.advanced_preferences?.[fields.email])}
+                      onChange={() => toggleAdvancedPreference(definition.key, "email")}
                     />
                   </label>
                 </div>

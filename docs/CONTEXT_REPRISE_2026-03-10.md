@@ -4,7 +4,7 @@ Date de mise à jour: 2026-03-10
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 12 sont implémentés côté code ou documentation d'exploitation:
+Les lots 1 à 13 sont implémentés côté code ou documentation d'exploitation:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -18,6 +18,7 @@ Les lots 1 à 12 sont implémentés côté code ou documentation d'exploitation:
 10. Notifications email transactionnelles avec queue, dispatch serveur et alerte incident
 11. Préférences notifications app/email par utilisateur avec alarme globale des non lus
 12. Supervision opérationnelle des emails avec métriques, filtres et actions de reprise
+13. Templates email métier et préférences avancées par sous-type de workflow
 
 ## Règles métier en vigueur
 
@@ -61,6 +62,10 @@ Les lots 1 à 12 sont implémentés côté code ou documentation d'exploitation:
   - une page `Supervision email`
   - des métriques d'exploitation, filtres et recherche
   - des actions de reprise manuelle et d'annulation
+- Le lot 13 ajoute:
+  - des templates email spécialisés par scénario métier
+  - des préférences fines par sous-type de workflow
+  - un filtrage app/email avancé sur les notifications pending et résultat
 
 ## SQL de référence
 
@@ -104,12 +109,12 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ma
 
 Le prochain lot à cadrer est:
 
-13. Templates email metier et preferences avancees
+14. Gouvernance plus fine des notifications et modèles administrables
 
 Objectif:
-- raffiner le contenu des emails par scenario metier
-- ajouter des preferences plus fines par sous-type ou par societe
+- piloter les modèles et le ciblage sans retoucher le code
+- préparer des notifications plus contextuelles par société ou criticité
 
-## Backlog restant après le lot 12
+## Backlog restant après le lot 13
 
-- Templates email metier et preferences avancees
+- Gouvernance fine des modèles et préférences par société

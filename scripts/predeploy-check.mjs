@@ -30,6 +30,7 @@ const REQUIRED_FILES = [
   "docs/SQL_CATALOG_2026-03-10.md",
   "sql/feature_email_notifications.sql",
   "sql/feature_notification_preferences.sql",
+  "sql/feature_notification_advanced_preferences.sql",
   "sql/feature_notification_operations.sql",
   "sql/sql_manifest_2026-03-10.json",
   "vercel.json",
@@ -164,6 +165,14 @@ async function validateSqlConsolidation() {
       ],
       ["sql/feature_app_notifications.sql", "sql/feature_email_notifications.sql"],
       ["sql/feature_email_notifications.sql", "sql/feature_notification_preferences.sql"],
+      [
+        "sql/feature_notification_preferences.sql",
+        "sql/feature_notification_advanced_preferences.sql",
+      ],
+      [
+        "sql/feature_notification_advanced_preferences.sql",
+        "sql/feature_notification_operations.sql",
+      ],
       ["sql/feature_notification_preferences.sql", "sql/feature_notification_operations.sql"],
       ["sql/assignment_update_ceo_daf_and_history_names.sql", "sql/feature_asset_bulk_import.sql"],
       [
