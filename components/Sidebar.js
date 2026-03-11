@@ -9,6 +9,14 @@ import {
 
 const SIDEBAR_CACHE_KEY = "trio_sidebar_counts_v1";
 
+function buildSidebarIcon(label) {
+  const normalized = String(label || "").trim();
+  if (!normalized) return "?";
+  const words = normalized.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0] || ""}${words[1][0] || ""}`.toUpperCase();
+}
+
 function readSidebarCache() {
   if (typeof window === "undefined") return null;
   try {
@@ -153,22 +161,24 @@ export default function Sidebar({
   const canSeeApprovals = true;
 
   const navItems = [
-    { path: "/dashboard", label: "Dashboard", count: null },
-    { path: "/notifications", label: "Notifications", count: counts.notifications },
-    { path: "/assets", label: "Immobilisations", count: counts.assets },
-    { path: "/incidents", label: "Incidents", count: counts.incidents },
-    { path: "/maintenance", label: "Maintenance", count: counts.maintenance },
-    ...(canSeeApprovals ? [{ path: "/approvals", label: "Validations", count: null }] : []),
+    { path: "/dashboard", label: "Dashboard", icon: "DB", count: null },
+    { path: "/notifications", label: "Notifications", icon: "NT", count: counts.notifications },
+    { path: "/assets", label: "Immobilisations", icon: "IM", count: counts.assets },
+    { path: "/incidents", label: "Incidents", icon: "IN", count: counts.incidents },
+    { path: "/maintenance", label: "Maintenance", icon: "MA", count: counts.maintenance },
+    ...(canSeeApprovals
+      ? [{ path: "/approvals", label: "Validations", icon: "VA", count: null }]
+      : []),
     ...(canSeeNotificationOperations
-      ? [{ path: "/notifications/operations", label: "Supervision email", count: null }]
+      ? [{ path: "/notifications/operations", label: "Supervision email", icon: "SE", count: null }]
       : []),
-    { path: "/replacement-plan", label: "Remplacement", count: null },
+    { path: "/replacement-plan", label: "Remplacement", icon: "RP", count: null },
     ...(canSeeNotificationGovernance
-      ? [{ path: "/notifications/governance", label: "Gouvernance notif", count: null }]
+      ? [{ path: "/notifications/governance", label: "Gouvernance notif", icon: "GN", count: null }]
       : []),
-    ...(canSeeAdmin ? [{ path: "/rules", label: "Règles", count: null }] : []),
-    ...(canSeeAudit ? [{ path: "/audit-logs", label: "Journal d'audit", count: null }] : []),
-    ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", count: null }] : []),
+    ...(canSeeAdmin ? [{ path: "/rules", label: "Règles", icon: "RG", count: null }] : []),
+    ...(canSeeAudit ? [{ path: "/audit-logs", label: "Journal d'audit", icon: "JA", count: null }] : []),
+    ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", icon: "AD", count: null }] : []),
   ];
 
   function handleBlur(event) {
@@ -250,7 +260,10 @@ export default function Sidebar({
               router.push(item.path);
             }}
           >
-            <span>{item.label}</span>
+            <span className="sidebar-link-icon" aria-hidden="true">
+              {item.icon || buildSidebarIcon(item.label)}
+            </span>
+            <span className="sidebar-link-label">{item.label}</span>
             {typeof item.count === "number" && (
               <span className="sidebar-count">{item.count}</span>
             )}
@@ -259,7 +272,10 @@ export default function Sidebar({
       </div>
 
       <button className="sidebar-logout" onClick={() => router.push("/logout")}>
-        Deconnexion
+        <span className="sidebar-link-icon" aria-hidden="true">
+          DX
+        </span>
+        <span className="sidebar-link-label">Deconnexion</span>
       </button>
     </aside>
   );

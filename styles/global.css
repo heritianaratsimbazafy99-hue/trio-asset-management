@@ -12,7 +12,7 @@
   --ok: #15803d;
   --shadow: 0 14px 28px rgba(9, 24, 43, 0.08);
   --sidebar-width: 280px;
-  --sidebar-collapsed-width: 28px;
+  --sidebar-collapsed-width: 92px;
 }
 
 * {
@@ -220,7 +220,8 @@ a:hover {
   gap: 22px;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 40;
-  transition: transform 0.24s ease, box-shadow 0.24s ease;
+  overflow: hidden;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, width 0.28s ease;
 }
 
 .sidebar-header {
@@ -230,11 +231,41 @@ a:hover {
 
 .sidebar-brand-copy {
   min-width: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.sidebar.is-collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .sidebar-brand {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar.is-collapsed .sidebar-brand-copy {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-12px);
 }
 
 .sidebar.is-collapsed.is-desktop {
-  transform: translateX(calc(-1 * (var(--sidebar-width) - var(--sidebar-collapsed-width))));
-  box-shadow: 0 16px 28px rgba(7, 16, 33, 0.2);
+  width: var(--sidebar-collapsed-width);
+  box-shadow: 0 20px 36px rgba(7, 16, 33, 0.22);
+}
+
+.sidebar.is-collapsed.is-desktop::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 96px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(123, 211, 234, 0.18), rgba(255, 255, 255, 0.56));
 }
 
 .sidebar-brand {
@@ -265,6 +296,13 @@ a:hover {
   border: 1px solid rgba(15, 23, 42, 0.12);
   box-shadow: 0 6px 12px rgba(10, 20, 40, 0.2);
   padding: 6px;
+  transition: transform 0.28s ease, width 0.28s ease, height 0.28s ease;
+}
+
+.sidebar.is-collapsed .sidebar-logo {
+  width: 50px;
+  height: 50px;
+  transform: translateX(-2px);
 }
 
 .sidebar-brand h2 {
@@ -296,7 +334,8 @@ a:hover {
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  gap: 10px;
+  transition: all 0.24s ease;
 }
 
 .sidebar-link:hover {
@@ -309,6 +348,32 @@ a:hover {
   color: #ffffff;
 }
 
+.sidebar-link-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #f8fbff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-link.active .sidebar-link-icon {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.sidebar-link-label {
+  flex: 1;
+  min-width: 0;
+}
+
 .sidebar-count {
   min-width: 26px;
   height: 24px;
@@ -319,6 +384,7 @@ a:hover {
   align-items: center;
   font-size: 12px;
   background: rgba(7, 16, 33, 0.6);
+  white-space: nowrap;
 }
 
 .sidebar-logout {
@@ -330,17 +396,54 @@ a:hover {
   padding: 11px 14px;
   font-weight: 700;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .sidebar-logout:hover {
   background: rgba(7, 16, 33, 0.46);
 }
 
+.sidebar.is-collapsed .sidebar-link {
+  justify-content: center;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.sidebar.is-collapsed .sidebar-link-label,
+.sidebar.is-collapsed .sidebar-logout .sidebar-link-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sidebar.is-collapsed .sidebar-count {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
+  background: rgba(220, 38, 38, 0.92);
+}
+
+.sidebar.is-collapsed .sidebar-link,
+.sidebar.is-collapsed .sidebar-logout {
+  position: relative;
+}
+
+.sidebar.is-collapsed .sidebar-logout {
+  justify-content: center;
+}
+
 .sidebar-edge-trigger {
   position: fixed;
   left: 0;
   top: 0;
-  width: 18px;
+  width: 10px;
   height: 100vh;
   border: 0;
   background: transparent;
@@ -350,7 +453,7 @@ a:hover {
 
 .sidebar-edge-trigger__line {
   position: absolute;
-  left: 4px;
+  left: 2px;
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
