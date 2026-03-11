@@ -48,6 +48,7 @@ Les lots 1 à 10 sont implémentés côté code ou documentation d'exploitation:
   - une queue `email_notification_queue`
   - un dispatch email via API route sécurisée
   - une alerte incident qui déclenche notification applicative + email
+  - un déclenchement périodique à faire via scheduler externe en environnement Vercel Hobby
 
 ## SQL de référence
 

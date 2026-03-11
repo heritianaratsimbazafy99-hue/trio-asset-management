@@ -253,7 +253,8 @@ Pour tester le dispatch email via l'application serveur:
 - configurer `EMAIL_FROM`
 - configurer `APP_BASE_URL`
 - configurer `CRON_SECRET`
-- le cron Vercel appelle `/api/notifications/email-dispatch`
+- configurer un scheduler externe qui appelle `/api/notifications/email-dispatch`
+- sur Vercel Hobby, ne pas declarer de `crons` dans `vercel.json`
 
 Puis vérifier côté application:
 

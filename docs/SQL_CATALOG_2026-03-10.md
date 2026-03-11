@@ -69,6 +69,7 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
   - `sql/feature_app_notifications.sql`
   - `sql/feature_audit_assignment_history.sql`
   - `sql/step_1_security_integrity_hardening.sql`
+  - un scheduler HTTP externe si l'application est déployée sur Vercel Hobby
 - `sql/feature_asset_bulk_import.sql` depend explicitement de:
   - `sql/assignment_update_ceo_daf_and_history_names.sql`
   - `sql/hotfix_asset_current_condition.sql`
