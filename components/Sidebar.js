@@ -242,41 +242,43 @@ export default function Sidebar({
         </button>
       </div>
 
-      <div className="sidebar-brand">
-        <img src="/trio-logo.svg" alt="Groupe Trio" className="sidebar-logo" />
-        <div className="sidebar-brand-copy">
-          <h2>Trio Asset</h2>
-          <p>Gestion centralisee</p>
+      <div className="sidebar-scroll">
+        <div className="sidebar-brand">
+          <img src="/trio-logo.svg" alt="Groupe Trio" className="sidebar-logo" />
+          <div className="sidebar-brand-copy">
+            <h2>Trio Asset</h2>
+            <p>Gestion centralisee</p>
+          </div>
         </div>
-      </div>
 
-      <div className="sidebar-nav">
-        {navItems.map((item) => (
-          <button
-            key={item.path}
-            className={`sidebar-link ${isActive(item.path) ? "active" : ""}`}
-            onClick={() => {
-              if (isActive(item.path)) return;
-              router.push(item.path);
-            }}
-          >
-            <span className="sidebar-link-icon" aria-hidden="true">
-              {item.icon || buildSidebarIcon(item.label)}
-            </span>
-            <span className="sidebar-link-label">{item.label}</span>
-            {typeof item.count === "number" && (
-              <span className="sidebar-count">{item.count}</span>
-            )}
-          </button>
-        ))}
-      </div>
+        <div className="sidebar-nav">
+          {navItems.map((item) => (
+            <button
+              key={item.path}
+              className={`sidebar-link ${isActive(item.path) ? "active" : ""}`}
+              onClick={() => {
+                if (isActive(item.path)) return;
+                router.push(item.path);
+              }}
+            >
+              <span className="sidebar-link-icon" aria-hidden="true">
+                {item.icon || buildSidebarIcon(item.label)}
+              </span>
+              <span className="sidebar-link-label">{item.label}</span>
+              {typeof item.count === "number" && (
+                <span className="sidebar-count">{item.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
 
-      <button className="sidebar-logout" onClick={() => router.push("/logout")}>
-        <span className="sidebar-link-icon" aria-hidden="true">
-          DX
-        </span>
-        <span className="sidebar-link-label">Deconnexion</span>
-      </button>
+        <button className="sidebar-logout" onClick={() => router.push("/logout")}>
+          <span className="sidebar-link-icon" aria-hidden="true">
+            DX
+          </span>
+          <span className="sidebar-link-label">Deconnexion</span>
+        </button>
+      </div>
     </aside>
   );
 }
