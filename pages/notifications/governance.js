@@ -19,6 +19,33 @@ function formatDate(value) {
   return new Date(value).toLocaleString("fr-FR");
 }
 
+function buildGovernanceScenarioKey(row) {
+  return `${String(row?.notification_type || "").toUpperCase()}::${String(
+    row?.request_type || "ANY"
+  ).toUpperCase()}`;
+}
+
+function normalizeTemplateComparableRow(row) {
+  return {
+    notification_type: row?.notification_type || "",
+    request_type: row?.request_type || "ANY",
+    template_name: row?.template_name || "",
+    email_subject_template: row?.email_subject_template || "",
+    title_template: row?.title_template || "",
+    body_template: row?.body_template || "",
+    cta_label: row?.cta_label || "",
+    is_enabled: row?.is_enabled !== false,
+  };
+}
+
+function normalizeRoutingComparableRow(row) {
+  return {
+    notification_type: row?.notification_type || "",
+    request_type: row?.request_type || "ANY",
+    channels: row?.channels || {},
+  };
+}
+
 export default function NotificationGovernancePage() {
   const [userRole, setUserRole] = useState("");
   const [actorId, setActorId] = useState("");
@@ -28,6 +55,8 @@ export default function NotificationGovernancePage() {
   const [message, setMessage] = useState("");
   const [templateRows, setTemplateRows] = useState([]);
   const [routingRows, setRoutingRows] = useState([]);
+  const [initialTemplateRows, setInitialTemplateRows] = useState([]);
+  const [initialRoutingRows, setInitialRoutingRows] = useState([]);
 
   useEffect(() => {
     bootstrap();
@@ -80,8 +109,13 @@ export default function NotificationGovernancePage() {
       return;
     }
 
-    setTemplateRows(normalizeTemplateRows(templatesResponse.data || []));
-    setRoutingRows(normalizeRoutingRows(routingResponse.data || []));
+    const normalizedTemplates = normalizeTemplateRows(templatesResponse.data || []);
+    const normalizedRouting = normalizeRoutingRows(routingResponse.data || []);
+
+    setTemplateRows(normalizedTemplates);
+    setRoutingRows(normalizedRouting);
+    setInitialTemplateRows(normalizedTemplates);
+    setInitialRoutingRows(normalizedRouting);
   }
 
   function updateTemplate(index, field, value) {
@@ -120,17 +154,50 @@ export default function NotificationGovernancePage() {
     setError("");
     setMessage("");
 
+    const initialTemplateMap = new Map(
+      initialTemplateRows.map((row) => [buildGovernanceScenarioKey(row), row])
+    );
+    const initialRoutingMap = new Map(
+      initialRoutingRows.map((row) => [buildGovernanceScenarioKey(row), row])
+    );
+
+    const changedTemplateRows = templateRows.filter((row) => {
+      const previous = initialTemplateMap.get(buildGovernanceScenarioKey(row));
+      return (
+        JSON.stringify(normalizeTemplateComparableRow(row)) !==
+        JSON.stringify(normalizeTemplateComparableRow(previous))
+      );
+    });
+
+    const changedRoutingRows = routingRows.filter((row) => {
+      const previous = initialRoutingMap.get(buildGovernanceScenarioKey(row));
+      return (
+        JSON.stringify(normalizeRoutingComparableRow(row)) !==
+        JSON.stringify(normalizeRoutingComparableRow(previous))
+      );
+    });
+
+    if (!changedTemplateRows.length && !changedRoutingRows.length) {
+      setMessage("Aucun changement à enregistrer.");
+      setSaving(false);
+      return;
+    }
+
     const [templatesUpsert, routingUpsert] = await Promise.all([
-      supabase
-        .from("notification_template_configs")
-        .upsert(buildTemplateUpsertRows(templateRows, actorId || null), {
-          onConflict: "notification_type,request_type",
-        }),
-      supabase
-        .from("notification_routing_rules")
-        .upsert(buildRoutingUpsertRows(routingRows, actorId || null), {
-          onConflict: "notification_type,request_type,channel,role",
-        }),
+      changedTemplateRows.length
+        ? supabase
+            .from("notification_template_configs")
+            .upsert(buildTemplateUpsertRows(changedTemplateRows, actorId || null), {
+              onConflict: "notification_type,request_type",
+            })
+        : Promise.resolve({ error: null }),
+      changedRoutingRows.length
+        ? supabase
+            .from("notification_routing_rules")
+            .upsert(buildRoutingUpsertRows(changedRoutingRows, actorId || null), {
+              onConflict: "notification_type,request_type,channel,role",
+            })
+        : Promise.resolve({ error: null }),
     ]);
 
     if (templatesUpsert.error || routingUpsert.error) {

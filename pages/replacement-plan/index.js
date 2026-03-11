@@ -250,7 +250,7 @@ export default function ReplacementPlanPage() {
     let assetsQuery = supabase
       .from("assets")
       .select("*, organisations(name)")
-      .order("updated_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (selectedCompanyId !== "ALL") {
       assetsQuery = assetsQuery.eq("company_id", selectedCompanyId);

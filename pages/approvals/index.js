@@ -4,6 +4,7 @@ import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
 import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDirectory";
+import { formatMGA } from "../../lib/currency";
 import {
   getWorkflowPayloadSummary,
   getWorkflowRequestTypeLabel,
@@ -18,6 +19,109 @@ function formatDate(value) {
   return new Date(value).toLocaleString("fr-FR");
 }
 
+function formatRequestFieldValue(key, value) {
+  if (value === null || value === undefined || value === "") return "-";
+
+  if (
+    [
+      "cost",
+      "old_purchase_value",
+      "new_purchase_value",
+      "old_value",
+      "new_value",
+      "old_effective_purchase_value",
+      "new_effective_purchase_value",
+    ].includes(key)
+  ) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? formatMGA(numeric) : String(value);
+  }
+
+  if (key === "due_date") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString("fr-FR");
+    }
+  }
+
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  return String(value);
+}
+
+function buildRequestDetailEntries(request) {
+  const payload =
+    request?.payload && typeof request.payload === "object" ? request.payload : {};
+  const requestType = String(request?.request_type || "").toUpperCase();
+  const entries = [];
+  const consumedKeys = new Set();
+
+  function pushEntry(label, key, value) {
+    consumedKeys.add(key);
+    if (value === null || value === undefined || value === "") return;
+    entries.push({
+      key,
+      label,
+      value: formatRequestFieldValue(key, value),
+    });
+  }
+
+  if (requestType === "MAINTENANCE_START") {
+    pushEntry("Ticket maintenance", "maintenance_id", payload.maintenance_id);
+    pushEntry("Titre", "title", payload.title || request.title);
+    pushEntry("Description", "description", payload.description);
+    pushEntry("Coût", "cost", payload.cost);
+    pushEntry("Priorité", "priority", payload.priority);
+    pushEntry("Deadline", "due_date", payload.due_date);
+    pushEntry("Statut demandé", "requested_status", payload.requested_status);
+  } else if (requestType === "ASSET_PURCHASE_VALUE_CHANGE") {
+    pushEntry(
+      "Ancienne valeur d'achat",
+      "old_effective_purchase_value",
+      payload.old_effective_purchase_value
+    );
+    pushEntry(
+      "Nouvelle valeur d'achat",
+      "new_effective_purchase_value",
+      payload.new_effective_purchase_value
+    );
+  } else if (requestType === "ASSET_DELETE") {
+    pushEntry("Statut actuel", "current_status", payload.current_status);
+  } else if (requestType === "ASSET_REBUS") {
+    pushEntry("Statut actuel", "current_status", payload.current_status);
+    pushEntry("Statut cible", "target_status", payload.target_status);
+  }
+
+  Object.entries(payload)
+    .filter(([key]) => {
+      return (
+        !consumedKeys.has(key) &&
+        ![
+          "asset_id",
+          "asset_name",
+          "asset_code",
+          "company_id",
+          "company_name",
+        ].includes(key)
+      );
+    })
+    .forEach(([key, value]) => {
+      entries.push({
+        key,
+        label: key.replaceAll("_", " "),
+        value: formatRequestFieldValue(key, value),
+      });
+    });
+
+  return entries;
+}
+
 export default function ApprovalsPage() {
   const [requests, setRequests] = useState([]);
   const [usersMap, setUsersMap] = useState({});
@@ -27,10 +131,18 @@ export default function ApprovalsPage() {
   const [message, setMessage] = useState("");
   const [userRole, setUserRole] = useState("");
   const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [selectedRequestId, setSelectedRequestId] = useState("");
 
   useEffect(() => {
     fetchRequests();
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (!selectedRequestId) return;
+    if (!requests.some((item) => item.id === selectedRequestId)) {
+      setSelectedRequestId("");
+    }
+  }, [requests, selectedRequestId]);
 
   async function fetchRequests() {
     setLoading(true);
@@ -116,6 +228,12 @@ export default function ApprovalsPage() {
     setActionLoading(false);
   }
 
+  const selectedRequest =
+    requests.find((item) => item.id === selectedRequestId) || null;
+  const selectedRequestDetails = selectedRequest
+    ? buildRequestDetailEntries(selectedRequest)
+    : [];
+
   return (
     <Layout>
       <h1>Validations</h1>
@@ -146,6 +264,114 @@ export default function ApprovalsPage() {
 
       {error && <div className="alert-error">{error}</div>}
       {message && <div className="alert-success">{message}</div>}
+
+      {selectedRequest && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div
+            className="dashboard-header-row"
+            style={{ gap: 16, alignItems: "flex-start", marginBottom: 12 }}
+          >
+            <div>
+              <h3 style={{ marginBottom: 6 }}>
+                {selectedRequest.title || getWorkflowRequestTypeLabel(selectedRequest.request_type)}
+              </h3>
+              <p style={{ color: "var(--muted)", margin: 0 }}>
+                {getWorkflowRequestTypeLabel(selectedRequest.request_type)} | Créée le{" "}
+                {formatDate(selectedRequest.created_at)}
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {selectedRequest.can_approve && (
+                <>
+                  <button
+                    className="btn-success"
+                    disabled={actionLoading}
+                    onClick={() => approveRequest(selectedRequest)}
+                  >
+                    Valider
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    disabled={actionLoading}
+                    onClick={() => rejectRequest(selectedRequest)}
+                  >
+                    Rejeter
+                  </button>
+                </>
+              )}
+              <button
+                className="btn-secondary"
+                onClick={() => setSelectedRequestId("")}
+                disabled={actionLoading}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+
+          <div className="dashboard-grid" style={{ marginBottom: 12 }}>
+            <div className="card" style={{ margin: 0 }}>
+              <strong>Statut</strong>
+              <div style={{ marginTop: 8 }}>
+                <span className={getWorkflowStatusClassName(selectedRequest.status)}>
+                  {getWorkflowStatusLabel(selectedRequest.status)}
+                </span>
+              </div>
+            </div>
+            <div className="card" style={{ margin: 0 }}>
+              <strong>Demandeur</strong>
+              <div style={{ marginTop: 8 }}>
+                {getUserLabelById(usersMap, selectedRequest.requested_by)}
+              </div>
+            </div>
+            <div className="card" style={{ margin: 0 }}>
+              <strong>Actif</strong>
+              <div style={{ marginTop: 8 }}>
+                {selectedRequest.asset_id ? (
+                  <Link className="dashboard-link" href={`/assets/${selectedRequest.asset_id}`}>
+                    {selectedRequest.asset_name || selectedRequest.asset_code || selectedRequest.asset_id}
+                  </Link>
+                ) : (
+                  selectedRequest.asset_name || selectedRequest.asset_code || "-"
+                )}
+              </div>
+            </div>
+            <div className="card" style={{ margin: 0 }}>
+              <strong>Société</strong>
+              <div style={{ marginTop: 8 }}>{selectedRequest.company_name || "-"}</div>
+            </div>
+          </div>
+
+          {selectedRequest.reason && (
+            <div className="alert-warning" style={{ marginBottom: 12 }}>
+              <strong>Motif:</strong> {selectedRequest.reason}
+            </div>
+          )}
+
+          <div className="card" style={{ margin: 0 }}>
+            <h4 style={{ marginBottom: 12 }}>Détail de la demande</h4>
+            {selectedRequestDetails.length ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                {selectedRequestDetails.map((entry) => (
+                  <div key={`${selectedRequest.id}-${entry.key}`} className="card" style={{ margin: 0 }}>
+                    <strong style={{ textTransform: "capitalize" }}>{entry.label}</strong>
+                    <div style={{ marginTop: 8, color: "var(--text)" }}>{entry.value}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>Aucun détail complémentaire disponible pour cette demande.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         {loading ? (
@@ -192,7 +418,24 @@ export default function ApprovalsPage() {
                       <td>{progress}</td>
                       <td>
                         <div style={{ display: "grid", gap: 6 }}>
-                          <span>{getWorkflowPayloadSummary(request)}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRequestId(request.id)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              padding: 0,
+                              textAlign: "left",
+                              color: "#1d4ed8",
+                              cursor: "pointer",
+                              font: "inherit",
+                            }}
+                          >
+                            {request.title || getWorkflowPayloadSummary(request)}
+                          </button>
+                          <small style={{ color: "#5f6f83" }}>
+                            {getWorkflowPayloadSummary(request)}
+                          </small>
                           {request.reason && (
                             <small style={{ color: "#5f6f83" }}>
                               Motif: {request.reason}
@@ -208,6 +451,13 @@ export default function ApprovalsPage() {
                       <td>
                         {request.can_approve ? (
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              className="btn-secondary"
+                              disabled={actionLoading}
+                              onClick={() => setSelectedRequestId(request.id)}
+                            >
+                              Voir détail
+                            </button>
                             <button
                               className="btn-success"
                               disabled={actionLoading}
@@ -226,7 +476,13 @@ export default function ApprovalsPage() {
                         ) : request.already_decided ? (
                           <span>Décision déjà prise</span>
                         ) : (
-                          <span>-</span>
+                          <button
+                            className="btn-secondary"
+                            disabled={actionLoading}
+                            onClick={() => setSelectedRequestId(request.id)}
+                          >
+                            Voir détail
+                          </button>
                         )}
                       </td>
                     </tr>

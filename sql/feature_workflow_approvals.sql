@@ -811,7 +811,10 @@ as $$
     wr.updated_at,
     (
       upper(coalesce(wr.status, '')) = 'PENDING'
-      and wr.requested_by is distinct from auth.uid()
+      and (
+        wr.requested_by is distinct from auth.uid()
+        or upper(coalesce(wr.request_type, '')) = 'MAINTENANCE_START'
+      )
       and public.has_any_app_role(wr.approver_roles)
       and not coalesce(ap.already_decided, false)
     ) as can_approve,

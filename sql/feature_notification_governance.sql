@@ -211,6 +211,16 @@ begin
   v_current_row := case when tg_op <> 'DELETE' then to_jsonb(new) else null end;
   v_previous_row := case when tg_op <> 'INSERT' then to_jsonb(old) else null end;
   v_entity_id := coalesce(v_current_row ->> 'id', v_previous_row ->> 'id');
+
+  if public.audit_actor_id() is null then
+    return coalesce(new, old);
+  end if;
+
+  if tg_op = 'UPDATE'
+     and (v_current_row - 'updated_at' - 'updated_by') = (v_previous_row - 'updated_at' - 'updated_by') then
+    return new;
+  end if;
+
   v_action := case
     when tg_table_name = 'notification_template_configs' and tg_op = 'INSERT' then 'NOTIFICATION_TEMPLATE_CONFIG_CREATED'
     when tg_table_name = 'notification_template_configs' and tg_op = 'UPDATE' then 'NOTIFICATION_TEMPLATE_CONFIG_UPDATED'

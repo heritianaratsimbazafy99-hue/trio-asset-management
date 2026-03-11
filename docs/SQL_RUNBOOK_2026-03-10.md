@@ -69,6 +69,7 @@ Raison:
 Patch ciblé hors chemin standard:
 
 - `sql/hotfix_admin_upsert_profile_ambiguous_id.sql`
+- `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`
 
 Autres scripts historiques classés comme supersédés dans le catalogue:
 
@@ -79,6 +80,11 @@ Autres scripts historiques classés comme supersédés dans le catalogue:
 - `sql/predeploy_hardening.sql`
 
 Ne pas les utiliser pour une base neuve. Suivre le manifeste et le catalogue.
+
+Quand utiliser `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`:
+
+- si un CEO ou un DAF ne peut pas approuver ou rejeter son propre ticket maintenance dans `Validations`
+- si `Journal d'audit` est saturé par les logs de seed ou de no-op sur `notification_routing_rules` / `notification_template_configs`
 
 ## 3. Rattrapage prod simplifié
 

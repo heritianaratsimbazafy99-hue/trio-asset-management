@@ -76,7 +76,7 @@ export default function RulesPage() {
     let assetsQuery = supabase
       .from("assets")
       .select("*, organisations(name)")
-      .order("updated_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (selectedCompanyId) {
       assetsQuery = assetsQuery.eq("company_id", selectedCompanyId);

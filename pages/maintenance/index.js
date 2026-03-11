@@ -64,7 +64,7 @@ export default function MaintenancePage() {
         .from("assets")
         .select("id, name, code, organisations(name)")
         .eq("status", "REBUS")
-        .order("updated_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(20),
       getCurrentUserProfile(),
     ]);

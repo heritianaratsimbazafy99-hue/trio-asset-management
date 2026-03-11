@@ -768,7 +768,8 @@ begin
     raise exception 'Cette demande n''est plus en attente';
   end if;
 
-  if v_request.requested_by = auth.uid() then
+  if v_request.requested_by = auth.uid()
+     and upper(coalesce(v_request.request_type, '')) <> 'MAINTENANCE_START' then
     raise exception 'forbidden: requester cannot approve own request';
   end if;
 
@@ -996,7 +997,8 @@ begin
     raise exception 'Cette demande n''est plus en attente';
   end if;
 
-  if v_request.requested_by = auth.uid() then
+  if v_request.requested_by = auth.uid()
+     and upper(coalesce(v_request.request_type, '')) <> 'MAINTENANCE_START' then
     raise exception 'forbidden: requester cannot reject own request';
   end if;
 
