@@ -227,14 +227,22 @@ export default function NotificationsPage() {
         <div className="card" style={{ marginBottom: 16 }}>
           <div className="dashboard-header-row" style={{ marginBottom: 0 }}>
             <div>
-              <h3>Supervision email</h3>
+              <h3>Pilotage des notifications</h3>
               <p style={{ color: "var(--muted)", marginTop: 4 }}>
-                Suivi des envois, des échecs et reprise des emails transactionnels.
+                Ajuste la gouvernance des canaux et supervise la queue des emails transactionnels.
               </p>
             </div>
-            <button className="btn-warning" onClick={() => router.push("/notifications/operations")}>
-              Ouvrir la supervision
-            </button>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                className="btn-secondary"
+                onClick={() => router.push("/notifications/governance")}
+              >
+                Gouvernance
+              </button>
+              <button className="btn-warning" onClick={() => router.push("/notifications/operations")}>
+                Ouvrir la supervision
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 # Runbook SQL Trio Asset Management
 
-Date de mise à jour: 2026-03-10
+Date de mise à jour: 2026-03-11
 
 Ce document définit l'ordre SQL de référence pour:
 
@@ -37,11 +37,12 @@ Exécuter les scripts dans cet ordre:
 18. `sql/feature_email_notifications.sql`
 19. `sql/feature_notification_preferences.sql`
 20. `sql/feature_notification_advanced_preferences.sql`
-21. `sql/feature_notification_operations.sql`
-22. `sql/hotfix_asset_vehicle_details.sql`
-23. `sql/hotfix_asset_code_autogenerate.sql`
-24. `sql/feature_asset_bulk_import.sql`
-25. `sql/step_3_post_migration_checks.sql`
+21. `sql/feature_notification_governance.sql`
+22. `sql/feature_notification_operations.sql`
+23. `sql/hotfix_asset_vehicle_details.sql`
+24. `sql/hotfix_asset_code_autogenerate.sql`
+25. `sql/feature_asset_bulk_import.sql`
+26. `sql/step_3_post_migration_checks.sql`
 
 Pourquoi ces ajouts sont canoniques:
 
@@ -50,6 +51,7 @@ Pourquoi ces ajouts sont canoniques:
 - `sql/feature_email_notifications.sql` ajoute la queue email, le dispatch transactionnel et les alertes incident au-dessus des notifications applicatives existantes.
 - `sql/feature_notification_preferences.sql` ajoute les préférences utilisateur app/email, le filtrage des notifications visibles et le filtrage de la queue email.
 - `sql/feature_notification_advanced_preferences.sql` ajoute les préférences fines par sous-type de workflow et les filtres app/email avancés.
+- `sql/feature_notification_governance.sql` ajoute les modèles et règles de routage administrables, avec fallback métier si aucune surcharge n'est active.
 - `sql/feature_notification_operations.sql` ajoute la supervision d'exploitation, les métriques et les actions de reprise manuelle sur la queue email.
 - `sql/hotfix_asset_vehicle_details.sql` et `sql/hotfix_asset_code_autogenerate.sql` sont nécessaires avant `sql/feature_asset_bulk_import.sql`.
 
@@ -92,8 +94,16 @@ Exécuter uniquement:
 1. `sql/feature_email_notifications.sql`
 2. `sql/feature_notification_preferences.sql`
 3. `sql/feature_notification_advanced_preferences.sql`
-4. `sql/feature_notification_operations.sql`
-5. `sql/step_3_post_migration_checks.sql`
+4. `sql/feature_notification_governance.sql`
+5. `sql/feature_notification_operations.sql`
+6. `sql/step_3_post_migration_checks.sql`
+
+### Cas A bis - prod déjà alignée jusqu'au lot 13
+
+Exécuter uniquement:
+
+1. `sql/feature_notification_governance.sql`
+2. `sql/step_3_post_migration_checks.sql`
 
 ### Cas B - prod déjà alignée jusqu'au lot 5
 
@@ -104,12 +114,13 @@ Exécuter uniquement:
 3. `sql/feature_email_notifications.sql`
 4. `sql/feature_notification_preferences.sql`
 5. `sql/feature_notification_advanced_preferences.sql`
-6. `sql/feature_notification_operations.sql`
-7. `sql/hotfix_asset_current_condition.sql`
-8. `sql/hotfix_asset_vehicle_details.sql`
-9. `sql/hotfix_asset_code_autogenerate.sql`
-10. `sql/feature_asset_bulk_import.sql`
-11. `sql/step_3_post_migration_checks.sql`
+6. `sql/feature_notification_governance.sql`
+7. `sql/feature_notification_operations.sql`
+8. `sql/hotfix_asset_current_condition.sql`
+9. `sql/hotfix_asset_vehicle_details.sql`
+10. `sql/hotfix_asset_code_autogenerate.sql`
+11. `sql/feature_asset_bulk_import.sql`
+12. `sql/step_3_post_migration_checks.sql`
 
 ### Cas C - prod a déjà reçu l'ancien lot 2
 
@@ -123,12 +134,13 @@ Exécuter dans cet ordre:
 6. `sql/feature_email_notifications.sql`
 7. `sql/feature_notification_preferences.sql`
 8. `sql/feature_notification_advanced_preferences.sql`
-9. `sql/feature_notification_operations.sql`
-10. `sql/hotfix_asset_current_condition.sql`
-11. `sql/hotfix_asset_vehicle_details.sql`
-12. `sql/hotfix_asset_code_autogenerate.sql`
-13. `sql/feature_asset_bulk_import.sql`
-14. `sql/step_3_post_migration_checks.sql`
+9. `sql/feature_notification_governance.sql`
+10. `sql/feature_notification_operations.sql`
+11. `sql/hotfix_asset_current_condition.sql`
+12. `sql/hotfix_asset_vehicle_details.sql`
+13. `sql/hotfix_asset_code_autogenerate.sql`
+14. `sql/feature_asset_bulk_import.sql`
+15. `sql/step_3_post_migration_checks.sql`
 
 ### Cas D - prod a la base sécurité/dashboard mais pas les lots fonctionnels
 
@@ -145,12 +157,13 @@ Exécuter:
 9. `sql/feature_email_notifications.sql`
 10. `sql/feature_notification_preferences.sql`
 11. `sql/feature_notification_advanced_preferences.sql`
-12. `sql/feature_notification_operations.sql`
-13. `sql/hotfix_asset_current_condition.sql`
-14. `sql/hotfix_asset_vehicle_details.sql`
-15. `sql/hotfix_asset_code_autogenerate.sql`
-16. `sql/feature_asset_bulk_import.sql`
-17. `sql/step_3_post_migration_checks.sql`
+12. `sql/feature_notification_governance.sql`
+13. `sql/feature_notification_operations.sql`
+14. `sql/hotfix_asset_current_condition.sql`
+15. `sql/hotfix_asset_vehicle_details.sql`
+16. `sql/hotfix_asset_code_autogenerate.sql`
+17. `sql/feature_asset_bulk_import.sql`
+18. `sql/step_3_post_migration_checks.sql`
 
 ## 4. Tester une fonction sécurisée dans SQL Editor
 

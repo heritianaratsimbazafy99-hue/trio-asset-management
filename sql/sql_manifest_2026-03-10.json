@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-10",
+  "updatedAt": "2026-03-11",
   "sourceOfTruth": {
     "runbook": "docs/SQL_RUNBOOK_2026-03-10.md",
     "catalog": "docs/SQL_CATALOG_2026-03-10.md"
@@ -26,6 +26,7 @@
       "sql/feature_email_notifications.sql",
       "sql/feature_notification_preferences.sql",
       "sql/feature_notification_advanced_preferences.sql",
+      "sql/feature_notification_governance.sql",
       "sql/feature_notification_operations.sql",
       "sql/hotfix_asset_vehicle_details.sql",
       "sql/hotfix_asset_code_autogenerate.sql",
@@ -110,6 +111,7 @@
       "sql/feature_email_notifications.sql",
       "sql/feature_notification_preferences.sql",
       "sql/feature_notification_advanced_preferences.sql",
+      "sql/feature_notification_governance.sql",
       "sql/feature_notification_operations.sql",
       "sql/hotfix_asset_vehicle_details.sql",
       "sql/hotfix_asset_code_autogenerate.sql",
@@ -117,10 +119,15 @@
       "sql/step_3_post_migration_checks.sql"
     ],
     "prodCatchUp": {
+      "alignedThroughLot13": [
+        "sql/feature_notification_governance.sql",
+        "sql/step_3_post_migration_checks.sql"
+      ],
       "alignedThroughLot8": [
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
         "sql/feature_notification_advanced_preferences.sql",
+        "sql/feature_notification_governance.sql",
         "sql/feature_notification_operations.sql",
         "sql/step_3_post_migration_checks.sql"
       ],
@@ -130,6 +137,7 @@
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
         "sql/feature_notification_advanced_preferences.sql",
+        "sql/feature_notification_governance.sql",
         "sql/feature_notification_operations.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
@@ -146,6 +154,7 @@
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
         "sql/feature_notification_advanced_preferences.sql",
+        "sql/feature_notification_governance.sql",
         "sql/feature_notification_operations.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
@@ -165,6 +174,7 @@
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
         "sql/feature_notification_advanced_preferences.sql",
+        "sql/feature_notification_governance.sql",
         "sql/feature_notification_operations.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",

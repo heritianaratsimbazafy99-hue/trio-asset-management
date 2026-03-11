@@ -1,6 +1,6 @@
 # Catalogue SQL Trio Asset Management
 
-Date de mise a jour: 2026-03-10
+Date de mise a jour: 2026-03-11
 
 Ce document classe tous les scripts SQL du depot.
 
@@ -35,11 +35,12 @@ Le chemin canonique correspond a la liste `catalog.canonical` du manifeste.
 | 18 | `sql/feature_email_notifications.sql` | Queue email transactionnelle, alertes incident et retry |
 | 19 | `sql/feature_notification_preferences.sql` | Preferences notifications app/email et filtrage utilisateur |
 | 20 | `sql/feature_notification_advanced_preferences.sql` | Preferences fines par sous-type de workflow et ciblage avance app/email |
-| 21 | `sql/feature_notification_operations.sql` | Supervision exploitation email, metriques et actions de reprise |
-| 22 | `sql/hotfix_asset_vehicle_details.sql` | Colonne `vehicle_details` |
-| 23 | `sql/hotfix_asset_code_autogenerate.sql` | Generation automatique des codes actif |
-| 24 | `sql/feature_asset_bulk_import.sql` | Import massif CSV/XLSX avec dry-run |
-| 25 | `sql/step_3_post_migration_checks.sql` | Controles finaux post-migration |
+| 21 | `sql/feature_notification_governance.sql` | Gouvernance administrable des modèles et règles de diffusion |
+| 22 | `sql/feature_notification_operations.sql` | Supervision exploitation email, metriques et actions de reprise |
+| 23 | `sql/hotfix_asset_vehicle_details.sql` | Colonne `vehicle_details` |
+| 24 | `sql/hotfix_asset_code_autogenerate.sql` | Generation automatique des codes actif |
+| 25 | `sql/feature_asset_bulk_import.sql` | Import massif CSV/XLSX avec dry-run |
+| 26 | `sql/step_3_post_migration_checks.sql` | Controles finaux post-migration |
 
 ## 2. Scripts supersedes
 
@@ -79,10 +80,14 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
 - `sql/feature_notification_advanced_preferences.sql` depend explicitement de:
   - `sql/feature_notification_preferences.sql`
   - `sql/feature_email_notifications.sql`
+- `sql/feature_notification_governance.sql` depend explicitement de:
+  - `sql/feature_notification_advanced_preferences.sql`
+  - `sql/feature_email_notifications.sql`
 - `sql/feature_notification_operations.sql` depend explicitement de:
   - `sql/feature_email_notifications.sql`
   - `sql/feature_notification_preferences.sql`
   - `sql/feature_notification_advanced_preferences.sql`
+  - `sql/feature_notification_governance.sql`
 - `sql/feature_asset_bulk_import.sql` depend explicitement de:
   - `sql/assignment_update_ceo_daf_and_history_names.sql`
   - `sql/hotfix_asset_current_condition.sql`

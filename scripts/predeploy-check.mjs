@@ -13,6 +13,7 @@ const REQUIRED_FILES = [
   "lib/assetImport.js",
   "lib/dataHealth.js",
   "lib/emailNotifications.js",
+  "lib/notificationGovernance.js",
   "lib/attachmentService.js",
   "lib/notifications.js",
   "lib/replacementPlanner.js",
@@ -22,6 +23,7 @@ const REQUIRED_FILES = [
   "lib/workflowRequests.js",
   "pages/api/notifications/email-dispatch.js",
   "pages/notifications/index.js",
+  "pages/notifications/governance.js",
   "pages/notifications/operations.js",
   "pages/replacement-plan/index.js",
   "pages/rules/index.js",
@@ -31,6 +33,7 @@ const REQUIRED_FILES = [
   "sql/feature_email_notifications.sql",
   "sql/feature_notification_preferences.sql",
   "sql/feature_notification_advanced_preferences.sql",
+  "sql/feature_notification_governance.sql",
   "sql/feature_notification_operations.sql",
   "sql/sql_manifest_2026-03-10.json",
   "vercel.json",
@@ -171,9 +174,16 @@ async function validateSqlConsolidation() {
       ],
       [
         "sql/feature_notification_advanced_preferences.sql",
+        "sql/feature_notification_governance.sql",
+      ],
+      [
+        "sql/feature_notification_governance.sql",
         "sql/feature_notification_operations.sql",
       ],
-      ["sql/feature_notification_preferences.sql", "sql/feature_notification_operations.sql"],
+      [
+        "sql/feature_notification_preferences.sql",
+        "sql/feature_notification_operations.sql",
+      ],
       ["sql/assignment_update_ceo_daf_and_history_names.sql", "sql/feature_asset_bulk_import.sql"],
       [
         "sql/hotfix_asset_current_condition.sql",

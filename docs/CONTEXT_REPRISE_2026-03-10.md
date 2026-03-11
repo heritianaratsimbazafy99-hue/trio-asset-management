@@ -1,10 +1,10 @@
 # Contexte de reprise Trio Asset Management
 
-Date de mise à jour: 2026-03-10
+Date de mise à jour: 2026-03-11
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 13 sont implémentés côté code ou documentation d'exploitation:
+Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -19,6 +19,7 @@ Les lots 1 à 13 sont implémentés côté code ou documentation d'exploitation:
 11. Préférences notifications app/email par utilisateur avec alarme globale des non lus
 12. Supervision opérationnelle des emails avec métriques, filtres et actions de reprise
 13. Templates email métier et préférences avancées par sous-type de workflow
+14. Gouvernance administrable des modèles et règles de diffusion des notifications
 
 ## Règles métier en vigueur
 
@@ -66,6 +67,11 @@ Les lots 1 à 13 sont implémentés côté code ou documentation d'exploitation:
   - des templates email spécialisés par scénario métier
   - des préférences fines par sous-type de workflow
   - un filtrage app/email avancé sur les notifications pending et résultat
+- Le lot 14 ajoute:
+  - des tables `notification_template_configs` et `notification_routing_rules`
+  - une page de gouvernance pour CEO/DAF
+  - un routage pilotable sans recoder, avec fallback métier
+  - des modèles de notifications et emails pilotables sans recoder
 
 ## SQL de référence
 
@@ -109,12 +115,12 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ma
 
 Le prochain lot à cadrer est:
 
-14. Gouvernance plus fine des notifications et modèles administrables
+15. Gouvernance avancée par société, criticité et digests
 
 Objectif:
-- piloter les modèles et le ciblage sans retoucher le code
-- préparer des notifications plus contextuelles par société ou criticité
+- piloter le ciblage par société ou criticité sans retoucher le code
+- préparer des digests et escalades de notification plus contextuels
 
-## Backlog restant après le lot 13
+## Backlog restant après le lot 14
 
-- Gouvernance fine des modèles et préférences par société
+- Gouvernance par société, criticité et digests de notification

@@ -32,14 +32,18 @@ function writeSidebarCache(payload) {
 }
 
 function getActiveSection(pathname = "") {
+  if (pathname === "/dashboard") return "dashboard";
   if (pathname === "/assets") return "assets";
   if (pathname === "/incidents") return "incidents";
   if (pathname === "/maintenance") return "maintenance";
   if (pathname === "/notifications") return "notifications";
+  if (pathname === "/notifications/governance") return "notification-governance";
   if (pathname === "/notifications/operations") return "notification-operations";
   if (pathname === "/replacement-plan") return "replacement-plan";
   if (pathname === "/rules") return "rules";
   if (pathname === "/approvals") return "approvals";
+  if (pathname === "/audit-logs") return "audit-logs";
+  if (pathname === "/admin/users") return "admin-users";
   return null;
 }
 
@@ -124,17 +128,26 @@ export default function Sidebar() {
   }
 
   function isActive(path) {
-    return router.pathname.startsWith(path);
+    const currentSection = getActiveSection(router.pathname);
+    const targetSection = getActiveSection(path);
+    if (currentSection && targetSection) {
+      return currentSection === targetSection;
+    }
+    return router.pathname === path || router.pathname.startsWith(`${path}/`);
   }
 
   const canSeeAdmin = hasOneRole(userRole, [APP_ROLES.CEO]);
   const canSeeAudit = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
   const canSeeNotificationOperations = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
+  const canSeeNotificationGovernance = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
   const canSeeApprovals = true;
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", count: null },
     { path: "/notifications", label: "Notifications", count: counts.notifications },
+    ...(canSeeNotificationGovernance
+      ? [{ path: "/notifications/governance", label: "Gouvernance notif", count: null }]
+      : []),
     ...(canSeeNotificationOperations
       ? [{ path: "/notifications/operations", label: "Supervision email", count: null }]
       : []),
