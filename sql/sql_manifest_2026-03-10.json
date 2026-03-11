@@ -25,6 +25,7 @@
       "sql/feature_app_notifications.sql",
       "sql/feature_email_notifications.sql",
       "sql/feature_notification_preferences.sql",
+      "sql/feature_notification_operations.sql",
       "sql/hotfix_asset_vehicle_details.sql",
       "sql/hotfix_asset_code_autogenerate.sql",
       "sql/feature_asset_bulk_import.sql",
@@ -107,6 +108,7 @@
       "sql/feature_app_notifications.sql",
       "sql/feature_email_notifications.sql",
       "sql/feature_notification_preferences.sql",
+      "sql/feature_notification_operations.sql",
       "sql/hotfix_asset_vehicle_details.sql",
       "sql/hotfix_asset_code_autogenerate.sql",
       "sql/feature_asset_bulk_import.sql",
@@ -116,6 +118,7 @@
       "alignedThroughLot8": [
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
+        "sql/feature_notification_operations.sql",
         "sql/step_3_post_migration_checks.sql"
       ],
       "alignedThroughLot5": [
@@ -123,6 +126,7 @@
         "sql/feature_app_notifications.sql",
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
+        "sql/feature_notification_operations.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
         "sql/hotfix_asset_code_autogenerate.sql",
@@ -137,6 +141,7 @@
         "sql/feature_app_notifications.sql",
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
+        "sql/feature_notification_operations.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
         "sql/hotfix_asset_code_autogenerate.sql",
@@ -154,6 +159,7 @@
         "sql/feature_app_notifications.sql",
         "sql/feature_email_notifications.sql",
         "sql/feature_notification_preferences.sql",
+        "sql/feature_notification_operations.sql",
         "sql/hotfix_asset_current_condition.sql",
         "sql/hotfix_asset_vehicle_details.sql",
         "sql/hotfix_asset_code_autogenerate.sql",

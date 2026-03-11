@@ -36,6 +36,7 @@ function getActiveSection(pathname = "") {
   if (pathname === "/incidents") return "incidents";
   if (pathname === "/maintenance") return "maintenance";
   if (pathname === "/notifications") return "notifications";
+  if (pathname === "/notifications/operations") return "notification-operations";
   if (pathname === "/replacement-plan") return "replacement-plan";
   if (pathname === "/rules") return "rules";
   if (pathname === "/approvals") return "approvals";
@@ -128,11 +129,15 @@ export default function Sidebar() {
 
   const canSeeAdmin = hasOneRole(userRole, [APP_ROLES.CEO]);
   const canSeeAudit = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
+  const canSeeNotificationOperations = hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]);
   const canSeeApprovals = true;
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", count: null },
     { path: "/notifications", label: "Notifications", count: counts.notifications },
+    ...(canSeeNotificationOperations
+      ? [{ path: "/notifications/operations", label: "Supervision email", count: null }]
+      : []),
     { path: "/assets", label: "Immobilisations", count: counts.assets },
     { path: "/incidents", label: "Incidents", count: counts.incidents },
     { path: "/maintenance", label: "Maintenance", count: counts.maintenance },

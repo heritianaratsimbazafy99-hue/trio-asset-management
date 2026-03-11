@@ -4,7 +4,7 @@ Date de mise à jour: 2026-03-10
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 11 sont implémentés côté code ou documentation d'exploitation:
+Les lots 1 à 12 sont implémentés côté code ou documentation d'exploitation:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -17,6 +17,7 @@ Les lots 1 à 11 sont implémentés côté code ou documentation d'exploitation:
 9. Consolidation technique SQL avec manifeste canonique, catalogue de scripts et runbook unique
 10. Notifications email transactionnelles avec queue, dispatch serveur et alerte incident
 11. Préférences notifications app/email par utilisateur avec alarme globale des non lus
+12. Supervision opérationnelle des emails avec métriques, filtres et actions de reprise
 
 ## Règles métier en vigueur
 
@@ -55,6 +56,11 @@ Les lots 1 à 11 sont implémentés côté code ou documentation d'exploitation:
   - des préférences applicatives et email par type de notification
   - un filtrage des notifications visibles, du compteur des non lus et de la queue email
   - une alarme visuelle globale en haut à droite de l'application
+- Le lot 12 ajoute:
+  - des RPC de supervision de la queue email pour CEO/DAF
+  - une page `Supervision email`
+  - des métriques d'exploitation, filtres et recherche
+  - des actions de reprise manuelle et d'annulation
 
 ## SQL de référence
 
@@ -90,18 +96,20 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ma
   - `email_notification_queue`
   - `user_notification_preferences`
   - `claim_email_notification_batch`
+  - `list_email_notification_queue_secure`
+  - `get_email_notification_metrics_secure`
   - `/api/notifications/email-dispatch`
 
 ## Prochain chantier prioritaire
 
 Le prochain lot à cadrer est:
 
-12. Supervision d'envoi et pilotage opérationnel des notifications
+13. Templates email metier et preferences avancees
 
 Objectif:
-- exposer un suivi des envois et des échecs côté administration
-- ajouter des filtres et métriques d'exploitation sur les emails
+- raffiner le contenu des emails par scenario metier
+- ajouter des preferences plus fines par sous-type ou par societe
 
-## Backlog restant après le lot 11
+## Backlog restant après le lot 12
 
-- Supervision d'envoi et pilotage opérationnel des notifications
+- Templates email metier et preferences avancees

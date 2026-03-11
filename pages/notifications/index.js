@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
-import { getCurrentUserProfile } from "../../lib/accessControl";
+import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
 import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDirectory";
 import {
   buildNotificationPreferencePayload,
@@ -194,6 +194,22 @@ export default function NotificationsPage() {
     <Layout>
       <h1>Notifications</h1>
       <p style={{ marginBottom: 12 }}>Rôle connecté: {userRole || "-"}</p>
+
+      {hasOneRole(userRole, [APP_ROLES.CEO, APP_ROLES.DAF]) && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div className="dashboard-header-row" style={{ marginBottom: 0 }}>
+            <div>
+              <h3>Supervision email</h3>
+              <p style={{ color: "var(--muted)", marginTop: 4 }}>
+                Suivi des envois, des échecs et reprise des emails transactionnels.
+              </p>
+            </div>
+            <button className="btn-warning" onClick={() => router.push("/notifications/operations")}>
+              Ouvrir la supervision
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="dashboard-header-row" style={{ marginBottom: 10 }}>
