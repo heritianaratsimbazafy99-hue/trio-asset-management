@@ -384,7 +384,7 @@ begin
       last_attempt_at = now(),
       attempt_count = coalesce(q.attempt_count, 0) + 1,
       updated_at = now()
-    where q.id in (select id from picked)
+    where q.id in (select picked.id from picked)
     returning
       q.id,
       q.recipient_user_id,
