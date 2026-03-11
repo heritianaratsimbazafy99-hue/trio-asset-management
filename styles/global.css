@@ -47,10 +47,104 @@ a:hover {
   margin-left: 280px;
 }
 
-.app-content > * {
+.app-page > * {
   max-width: 1180px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.app-topbar {
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.app-topbar-spacer {
+  flex: 1;
+}
+
+.notification-alarm {
+  position: relative;
+  border: 1px solid rgba(11, 61, 145, 0.16);
+  background: linear-gradient(145deg, rgba(255, 250, 244, 0.96), rgba(255, 255, 255, 0.98));
+  color: var(--text);
+  box-shadow: var(--shadow);
+  border-radius: 18px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.notification-alarm:hover {
+  transform: translateY(-1px);
+}
+
+.notification-alarm.has-alert {
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+.notification-alarm-shell {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(11, 61, 145, 0.12), rgba(10, 143, 135, 0.15));
+  position: relative;
+}
+
+.notification-alarm.has-alert .notification-alarm-shell {
+  background: linear-gradient(145deg, rgba(220, 38, 38, 0.18), rgba(245, 158, 11, 0.18));
+}
+
+.notification-alarm-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.notification-alarm-dot {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.16);
+}
+
+.notification-alarm-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.notification-alarm-copy strong {
+  font-size: 14px;
+}
+
+.notification-alarm-copy small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.notification-alarm-count {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .sidebar {
@@ -165,6 +259,59 @@ a:hover {
 
 .sidebar-logout:hover {
   background: rgba(7, 16, 33, 0.46);
+}
+
+.notification-preferences-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.notification-preference-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 140px 140px;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.notification-preference-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.notification-preference-copy h4 {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.notification-preference-copy p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notification-toggle-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.notification-toggle {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--brand);
+}
+
+.notification-preferences-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 140px 140px;
+  gap: 14px;
+  padding-bottom: 12px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 h1 {
@@ -952,6 +1099,15 @@ h1 {
     padding: 20px;
   }
 
+  .app-topbar {
+    margin-bottom: 16px;
+  }
+
+  .notification-alarm {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .form-grid,
   .vehicle-extra-grid,
   .vehicle-detail-grid,
@@ -994,5 +1150,14 @@ h1 {
   .sidebar-nav {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .notification-preferences-head,
+  .notification-preference-row {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-toggle-cell {
+    justify-content: flex-start;
   }
 }

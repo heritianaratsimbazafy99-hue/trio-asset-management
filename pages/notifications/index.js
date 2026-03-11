@@ -5,6 +5,9 @@ import { supabase } from "../../lib/supabaseClient";
 import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDirectory";
 import {
+  buildNotificationPreferencePayload,
+  NOTIFICATION_PREFERENCE_DEFINITIONS,
+  NOTIFICATION_PREFERENCE_FIELDS,
   getNotificationStatusClassName,
   getNotificationStatusLabel,
   getNotificationTypeLabel,
@@ -34,6 +37,9 @@ export default function NotificationsPage() {
   const [actorsMap, setActorsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
+  const [preferencesSaving, setPreferencesSaving] = useState(false);
+  const [preferences, setPreferences] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState("UNREAD");
@@ -42,6 +48,10 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications();
   }, [statusFilter]);
+
+  useEffect(() => {
+    fetchPreferences();
+  }, []);
 
   async function fetchNotifications() {
     setLoading(true);
@@ -72,6 +82,26 @@ export default function NotificationsPage() {
     setActorsMap(nextActorsMap);
     setLoading(false);
     emitSidebarRefresh();
+  }
+
+  async function fetchPreferences() {
+    setPreferencesLoading(true);
+
+    const { data, error: rpcError } = await supabase.rpc("get_my_notification_preferences");
+
+    if (rpcError) {
+      setError(rpcError.message);
+      setPreferences(null);
+      setPreferencesLoading(false);
+      return;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    setPreferences(row || null);
+    if (row?.user_role) {
+      setUserRole(row.user_role);
+    }
+    setPreferencesLoading(false);
   }
 
   async function markAsRead(notificationId) {
@@ -110,6 +140,48 @@ export default function NotificationsPage() {
     setActionLoading(false);
   }
 
+  function togglePreference(field) {
+    setPreferences((previous) => ({
+      ...(previous || {}),
+      [field]: !previous?.[field],
+    }));
+  }
+
+  async function savePreferences() {
+    if (!preferences) return;
+    setPreferencesSaving(true);
+    setError("");
+    setMessage("");
+
+    const payload = buildNotificationPreferencePayload(preferences);
+    const { data, error: rpcError } = await supabase.rpc("update_my_notification_preferences", {
+      p_app_workflow_pending: payload.app_workflow_pending,
+      p_app_workflow_approved: payload.app_workflow_approved,
+      p_app_workflow_rejected: payload.app_workflow_rejected,
+      p_app_workflow_failed: payload.app_workflow_failed,
+      p_app_incident_alert: payload.app_incident_alert,
+      p_email_workflow_pending: payload.email_workflow_pending,
+      p_email_workflow_approved: payload.email_workflow_approved,
+      p_email_workflow_rejected: payload.email_workflow_rejected,
+      p_email_workflow_failed: payload.email_workflow_failed,
+      p_email_incident_alert: payload.email_incident_alert,
+    });
+
+    if (rpcError) {
+      setError(rpcError.message);
+    } else {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        setPreferences(row);
+      }
+      setMessage("Préférences de notifications mises à jour.");
+      await fetchNotifications();
+      emitSidebarRefresh();
+    }
+
+    setPreferencesSaving(false);
+  }
+
   async function openNotification(item) {
     if (!item?.link_path) return;
     if (String(item.status || "").toUpperCase() === "UNREAD") {
@@ -122,6 +194,63 @@ export default function NotificationsPage() {
     <Layout>
       <h1>Notifications</h1>
       <p style={{ marginBottom: 12 }}>Rôle connecté: {userRole || "-"}</p>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="dashboard-header-row" style={{ marginBottom: 10 }}>
+          <div>
+            <h3>Préférences notifications</h3>
+            <p style={{ color: "var(--muted)", marginTop: 4 }}>
+              Les tickets de maintenance en attente sont validés par le CEO et le DAF. Active
+              uniquement les canaux qui te sont utiles.
+            </p>
+          </div>
+          <button className="btn-primary" disabled={preferencesSaving || preferencesLoading} onClick={savePreferences}>
+            {preferencesSaving ? "Enregistrement..." : "Enregistrer"}
+          </button>
+        </div>
+
+        {preferencesLoading ? (
+          <p>Chargement des préférences...</p>
+        ) : preferences ? (
+          <div className="notification-preferences-grid">
+            <div className="notification-preferences-head">
+              <span>Type</span>
+              <span>Application</span>
+              <span>Email</span>
+            </div>
+
+            {NOTIFICATION_PREFERENCE_DEFINITIONS.map((definition) => {
+              const fields = NOTIFICATION_PREFERENCE_FIELDS[definition.type];
+              return (
+                <div key={definition.type} className="notification-preference-row">
+                  <div className="notification-preference-copy">
+                    <h4>{definition.title}</h4>
+                    <p>{definition.description}</p>
+                  </div>
+                  <label className="notification-toggle-cell">
+                    <input
+                      type="checkbox"
+                      className="notification-toggle"
+                      checked={Boolean(preferences?.[fields.app])}
+                      onChange={() => togglePreference(fields.app)}
+                    />
+                  </label>
+                  <label className="notification-toggle-cell">
+                    <input
+                      type="checkbox"
+                      className="notification-toggle"
+                      checked={Boolean(preferences?.[fields.email])}
+                      onChange={() => togglePreference(fields.email)}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p>Impossible de charger les préférences.</p>
+        )}
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12 }}>

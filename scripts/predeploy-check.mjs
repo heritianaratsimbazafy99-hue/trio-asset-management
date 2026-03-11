@@ -7,6 +7,7 @@ const REQUIRED_FILES = [
   "pages/admin/users.js",
   "pages/approvals/index.js",
   "pages/audit-logs/index.js",
+  "components/NotificationAlarm.js",
   "pages/assets/import.js",
   "pages/assets/[id]/journal.js",
   "lib/assetImport.js",
@@ -27,6 +28,7 @@ const REQUIRED_FILES = [
   "docs/SQL_RUNBOOK_2026-03-10.md",
   "docs/SQL_CATALOG_2026-03-10.md",
   "sql/feature_email_notifications.sql",
+  "sql/feature_notification_preferences.sql",
   "sql/sql_manifest_2026-03-10.json",
   "vercel.json",
 ];
@@ -159,6 +161,7 @@ async function validateSqlConsolidation() {
         "sql/assignment_update_ceo_daf_and_history_names.sql",
       ],
       ["sql/feature_app_notifications.sql", "sql/feature_email_notifications.sql"],
+      ["sql/feature_email_notifications.sql", "sql/feature_notification_preferences.sql"],
       ["sql/assignment_update_ceo_daf_and_history_names.sql", "sql/feature_asset_bulk_import.sql"],
       [
         "sql/hotfix_asset_current_condition.sql",

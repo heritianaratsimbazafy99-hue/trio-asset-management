@@ -4,7 +4,7 @@ Date de mise à jour: 2026-03-10
 
 ## Etat fonctionnel couvert
 
-Les lots 1 à 10 sont implémentés côté code ou documentation d'exploitation:
+Les lots 1 à 11 sont implémentés côté code ou documentation d'exploitation:
 
 1. Workflow d'approbation pour suppression d'actif et changement de valeur d'achat
 2. Ticket maintenance avec validation avant démarrage et demande de passage en rebus
@@ -16,6 +16,7 @@ Les lots 1 à 10 sont implémentés côté code ou documentation d'exploitation:
 8. Import massif Excel / CSV avec dry-run de validation avant écriture
 9. Consolidation technique SQL avec manifeste canonique, catalogue de scripts et runbook unique
 10. Notifications email transactionnelles avec queue, dispatch serveur et alerte incident
+11. Préférences notifications app/email par utilisateur avec alarme globale des non lus
 
 ## Règles métier en vigueur
 
@@ -49,6 +50,11 @@ Les lots 1 à 10 sont implémentés côté code ou documentation d'exploitation:
   - un dispatch email via API route sécurisée
   - une alerte incident qui déclenche notification applicative + email
   - un déclenchement périodique à faire via scheduler externe en environnement Vercel Hobby
+- Le lot 11 ajoute:
+  - une table `user_notification_preferences`
+  - des préférences applicatives et email par type de notification
+  - un filtrage des notifications visibles, du compteur des non lus et de la queue email
+  - une alarme visuelle globale en haut à droite de l'application
 
 ## SQL de référence
 
@@ -82,6 +88,7 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ma
 - Les notifications dépendent désormais de:
   - `notifications`
   - `email_notification_queue`
+  - `user_notification_preferences`
   - `claim_email_notification_batch`
   - `/api/notifications/email-dispatch`
 
@@ -89,12 +96,12 @@ Ne pas reconstruire l'ordre SQL à partir des conversations précédentes. Le ma
 
 Le prochain lot à cadrer est:
 
-11. Préférences email et supervision d'envoi
+12. Supervision d'envoi et pilotage opérationnel des notifications
 
 Objectif:
-- permettre l'opt-in / opt-out par type d'email
 - exposer un suivi des envois et des échecs côté administration
+- ajouter des filtres et métriques d'exploitation sur les emails
 
-## Backlog restant après le lot 10
+## Backlog restant après le lot 11
 
-- Préférences email et supervision d'envoi
+- Supervision d'envoi et pilotage opérationnel des notifications
