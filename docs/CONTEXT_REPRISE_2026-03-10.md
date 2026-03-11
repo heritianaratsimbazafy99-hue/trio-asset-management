@@ -48,6 +48,7 @@ Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
 - Un manifeste SQL versionné et un catalogue de scripts sont maintenus dans:
   - `sql/sql_manifest_2026-03-10.json`
   - `docs/SQL_CATALOG_2026-03-10.md`
+- Le `README.md` ne doit plus porter un ordre SQL duplique: il renvoie vers le runbook, le manifeste et le catalogue
 - Le lot 10 ajoute:
   - une queue `email_notification_queue`
   - un dispatch email via API route sécurisée
@@ -72,6 +73,9 @@ Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
   - une page de gouvernance pour CEO/DAF
   - un routage pilotable sans recoder, avec fallback métier
   - des modèles de notifications et emails pilotables sans recoder
+- La stabilisation d'exploitation des notifications est documentée dans:
+  - `docs/EMAIL_OPERATIONS_RUNBOOK_2026-03-11.md`
+  - `docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md`
 
 ## SQL de référence
 

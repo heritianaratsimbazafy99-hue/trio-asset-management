@@ -287,6 +287,11 @@ Pour tester le dispatch email via l'application serveur:
 - configurer un scheduler externe qui appelle `/api/notifications/email-dispatch`
 - sur Vercel Hobby, ne pas declarer de `crons` dans `vercel.json`
 
+Pour l'exploitation courante et le smoke test post-deploiement des lots 10 a 14, utiliser aussi:
+
+- `docs/EMAIL_OPERATIONS_RUNBOOK_2026-03-11.md`
+- `docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md`
+
 Puis vérifier côté application:
 
 - dashboard

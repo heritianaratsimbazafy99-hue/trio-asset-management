@@ -1,6 +1,18 @@
 # TRIO Asset Management
 
-Application Next.js + Supabase pour la gestion d'actifs multi-sociétés (TRIO), avec contrôle d'accès par rôles, audit, maintenance/incidents et dashboard de pilotage.
+Application Next.js + Supabase pour la gestion d'actifs multi-sociétés (TRIO), stabilisée jusqu'au lot 14:
+
+- workflows d'approbation
+- maintenance et rebus
+- historique diff champ par champ
+- plan de remplacement
+- moteur de règles
+- santé des données actionnable
+- notifications applicatives
+- notifications email et supervision
+- préférences avancées
+- gouvernance des modèles et du routage
+- import massif d'actifs
 
 ## Stack
 
@@ -19,11 +31,29 @@ Application Next.js + Supabase pour la gestion d'actifs multi-sociétés (TRIO),
 
 - Node.js 18+
 - Projet Supabase actif
-- Variables d'environnement:
+- Variables locales minimales:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+- Variables serveur requises pour le dispatch email:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=...
+RESEND_API_KEY=...
+EMAIL_FROM=...
+APP_BASE_URL=...
+CRON_SECRET=...
+```
+
+- Variables serveur optionnelles:
+
+```bash
+EMAIL_REPLY_TO=...
+EMAIL_PROVIDER=resend
+EMAIL_NOTIFICATIONS_ENABLED=true
 ```
 
 ## Installation locale
@@ -34,40 +64,15 @@ npm install
 npm run dev
 ```
 
-## Ordre SQL recommandé (Supabase SQL Editor)
+## Source de vérité SQL
 
-### Initialisation complète (nouvel environnement)
+Ne pas dupliquer l'ordre SQL dans ce `README.md`. Les références canoniques sont:
 
-1. `supabase_schema.sql`
-2. `sql/group_mode_roles_setup.sql`
-3. `sql/security_admin_audit_upgrade.sql`
-4. `sql/feature_audit_assignment_history.sql`
-5. `sql/predeploy_hardening.sql`
-6. `sql/assignment_update_ceo_daf_and_history_names.sql`
-7. `sql/fix_assignment_history_fk_trigger.sql`
-8. `sql/step_1_security_integrity_hardening.sql`
-9. `sql/step_2_secure_search_and_dashboard_rpc.sql`
-10. `sql/step_3_post_migration_checks.sql`
-11. `sql/step_4_user_labels_email_patch.sql`
+- [docs/SQL_RUNBOOK_2026-03-10.md](docs/SQL_RUNBOOK_2026-03-10.md)
+- [sql/sql_manifest_2026-03-10.json](sql/sql_manifest_2026-03-10.json)
+- [docs/SQL_CATALOG_2026-03-10.md](docs/SQL_CATALOG_2026-03-10.md)
 
-### Environnement déjà en production
-
-Exécuter au minimum:
-
-1. `sql/step_1_security_integrity_hardening.sql`
-2. `sql/step_2_secure_search_and_dashboard_rpc.sql`
-3. `sql/step_3_post_migration_checks.sql`
-4. `sql/step_4_user_labels_email_patch.sql`
-
-## Ce qui est renforcé
-
-- Verrouillage des updates d'actifs (RLS + trigger sensible par rôle/colonne)
-- Workflow incident forcé en création `OUVERT`, clôture réservée leadership maintenance
-- RPC de recherche sécurisée pour `assets` et `audit_logs` (plus de `.or(...)` dynamique)
-- Dashboard alimenté par agrégation SQL (`dashboard_summary`) avec pagination serveur
-- `refresh_user_directory()` limité CEO/service role
-- Calcul SLA corrigé en fin de journée locale (timezone-safe)
-- Export PDF dashboard protégé contre injection HTML
+Le manifeste et le runbook priment sur toute conversation ou ancienne note de déploiement.
 
 ## Vérifications qualité
 
@@ -77,27 +82,29 @@ npm run check:build
 npm run check
 ```
 
-## Vérification fonctionnelle
+Checklist de vérification rôle/RLS/dashboard:
 
-Checklist de tests rôles/RLS/audit/dashboard:
+- [docs/verification_security_role_matrix.md](docs/verification_security_role_matrix.md)
 
-- [docs/verification_security_role_matrix.md](/Users/heritiana/Documents/Codex test/docs/verification_security_role_matrix.md)
+## Exploitation
+
+- Runbook email et scheduler: [docs/EMAIL_OPERATIONS_RUNBOOK_2026-03-11.md](docs/EMAIL_OPERATIONS_RUNBOOK_2026-03-11.md)
+- Smoke test post-déploiement: [docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md](docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md)
+
+Note d'exploitation:
+
+- le dispatch email passe par `/api/notifications/email-dispatch`
+- sur Vercel Hobby, `vercel.json` reste sans `crons`
+- le déclenchement doit être assuré par un scheduler HTTP externe
 
 ## Déploiement production
 
 ```bash
 cd "/Users/heritiana/Documents/Codex test"
+npm run check
 git status
 git add -A
-git commit -m "feat: security hardening + secure search + scalable dashboard rpc"
+git commit -m "chore: stabilize lot 14 operations and docs"
 git push origin main
 npx vercel --prod
 ```
-
-## Post-déploiement (smoke test)
-
-1. Créer un actif (`/assets/new`) et vérifier succès.
-2. Créer un incident en forçant un statut non `OUVERT` (doit rester `OUVERT`).
-3. Clôturer un incident avec `RESPONSABLE_MAINTENANCE` (succès) et avec utilisateur standard (refus).
-4. Vérifier recherche `/assets` et `/audit-logs` avec pagination.
-5. Vérifier le dashboard (chargement rapide, top risques paginé).

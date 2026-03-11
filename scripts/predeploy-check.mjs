@@ -30,6 +30,8 @@ const REQUIRED_FILES = [
   "docs/CONTEXT_REPRISE_2026-03-10.md",
   "docs/SQL_RUNBOOK_2026-03-10.md",
   "docs/SQL_CATALOG_2026-03-10.md",
+  "docs/EMAIL_OPERATIONS_RUNBOOK_2026-03-11.md",
+  "docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md",
   "sql/feature_email_notifications.sql",
   "sql/feature_notification_preferences.sql",
   "sql/feature_notification_advanced_preferences.sql",
@@ -55,6 +57,9 @@ const EMAIL_ENV_KEYS = [
 const SQL_MANIFEST_PATH = "sql/sql_manifest_2026-03-10.json";
 const SQL_RUNBOOK_PATH = "docs/SQL_RUNBOOK_2026-03-10.md";
 const SQL_CATALOG_PATH = "docs/SQL_CATALOG_2026-03-10.md";
+const EMAIL_OPERATIONS_RUNBOOK_PATH = "docs/EMAIL_OPERATIONS_RUNBOOK_2026-03-11.md";
+const POST_DEPLOY_SMOKE_TEST_PATH = "docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md";
+const README_PATH = "README.md";
 
 async function exists(path) {
   try {
@@ -227,6 +232,43 @@ async function validateSqlConsolidation() {
   return errors;
 }
 
+async function validateReadmeConsistency() {
+  const errors = [];
+
+  try {
+    const readmeRaw = await readFile(README_PATH, "utf8");
+    const requiredRefs = [
+      SQL_RUNBOOK_PATH,
+      SQL_MANIFEST_PATH,
+      SQL_CATALOG_PATH,
+      EMAIL_OPERATIONS_RUNBOOK_PATH,
+      POST_DEPLOY_SMOKE_TEST_PATH,
+      "/api/notifications/email-dispatch",
+    ];
+
+    for (const ref of requiredRefs) {
+      if (!readmeRaw.includes(ref)) {
+        errors.push(`README: reference manquante -> ${ref}`);
+      }
+    }
+
+    const forbiddenRefs = [
+      "sql/predeploy_hardening.sql",
+      "sql/fix_assignment_history_fk_trigger.sql",
+    ];
+
+    for (const ref of forbiddenRefs) {
+      if (readmeRaw.includes(ref)) {
+        errors.push(`README: reference obsolete a supprimer -> ${ref}`);
+      }
+    }
+  } catch (error) {
+    errors.push(`README: ${(error && error.message) || error}`);
+  }
+
+  return errors;
+}
+
 async function run() {
   let hasError = false;
   await loadLocalEnv();
@@ -244,6 +286,17 @@ async function run() {
     console.log("OK manifeste, runbook et catalogue SQL alignes");
   } else {
     for (const error of sqlErrors) {
+      console.log(`ERROR ${error}`);
+    }
+    hasError = true;
+  }
+
+  printSection("README");
+  const readmeErrors = await validateReadmeConsistency();
+  if (readmeErrors.length === 0) {
+    console.log("OK README aligne avec le runbook SQL et les runbooks d'exploitation");
+  } else {
+    for (const error of readmeErrors) {
       console.log(`ERROR ${error}`);
     }
     hasError = true;
