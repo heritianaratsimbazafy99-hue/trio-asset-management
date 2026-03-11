@@ -945,10 +945,14 @@ h1 {
 .badge-success,
 .badge-warning,
 .badge-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .sla-badge {
