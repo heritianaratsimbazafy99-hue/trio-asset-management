@@ -47,7 +47,17 @@ function getActiveSection(pathname = "") {
   return null;
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  isMobile = false,
+  isDesktop = true,
+  isOpen = true,
+  isPinned = true,
+  onOpen,
+  onClose,
+  onPinToggle,
+  onInteractionStart,
+  onInteractionEnd,
+}) {
   const router = useRouter();
 
   const [counts, setCounts] = useState({
@@ -161,11 +171,70 @@ export default function Sidebar() {
     ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", count: null }] : []),
   ];
 
+  function handleBlur(event) {
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    onInteractionEnd?.();
+    if (!isPinned && isDesktop) {
+      onClose?.();
+    }
+  }
+
   return (
-    <div className="sidebar">
+    <aside
+      className={`sidebar ${isOpen ? "is-open" : "is-collapsed"} ${
+        isPinned ? "is-pinned" : "is-auto"
+      } ${isMobile ? "is-mobile" : "is-desktop"}`}
+      onMouseEnter={() => {
+        onOpen?.();
+        onInteractionStart?.();
+      }}
+      onMouseLeave={() => {
+        onInteractionEnd?.();
+        if (!isPinned && isDesktop) {
+          onClose?.();
+        }
+      }}
+      onFocusCapture={() => {
+        onOpen?.();
+        onInteractionStart?.();
+      }}
+      onBlurCapture={handleBlur}
+      aria-label="Navigation principale"
+    >
+      <div className="sidebar-header">
+        <button
+          type="button"
+          className={`sidebar-pin-toggle ${isPinned ? "is-active" : ""}`}
+          onClick={onPinToggle}
+          aria-pressed={isPinned}
+          aria-label={
+            isMobile
+              ? isOpen
+                ? "Fermer le menu lateral"
+                : "Ouvrir le menu lateral"
+              : isPinned
+              ? "Desepingler le menu lateral"
+              : "Epingler le menu lateral"
+          }
+          title={
+            isMobile
+              ? isOpen
+                ? "Fermer le menu"
+                : "Ouvrir le menu"
+              : isPinned
+              ? "Desepingler le menu"
+              : "Epingler le menu"
+          }
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </div>
+
       <div className="sidebar-brand">
         <img src="/trio-logo.svg" alt="Groupe Trio" className="sidebar-logo" />
-        <div>
+        <div className="sidebar-brand-copy">
           <h2>Trio Asset</h2>
           <p>Gestion centralisee</p>
         </div>
@@ -192,6 +261,6 @@ export default function Sidebar() {
       <button className="sidebar-logout" onClick={() => router.push("/logout")}>
         Deconnexion
       </button>
-    </div>
+    </aside>
   );
 }

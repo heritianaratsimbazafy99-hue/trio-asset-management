@@ -11,6 +11,8 @@
   --danger: #dc2626;
   --ok: #15803d;
   --shadow: 0 14px 28px rgba(9, 24, 43, 0.08);
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 28px;
 }
 
 * {
@@ -44,7 +46,8 @@ a:hover {
 .app-content {
   flex: 1;
   padding: 36px;
-  margin-left: 280px;
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.24s ease;
 }
 
 .app-page > * {
@@ -63,6 +66,62 @@ a:hover {
 
 .app-topbar-spacer {
   flex: 1;
+}
+
+.app-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sidebar-topbar-toggle,
+.sidebar-pin-toggle {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(11, 61, 145, 0.16);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.sidebar-topbar-toggle:hover,
+.sidebar-pin-toggle:hover,
+.sidebar-topbar-toggle:focus-visible,
+.sidebar-pin-toggle:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(16, 82, 180, 0.32);
+  background: #ffffff;
+}
+
+.sidebar-topbar-toggle span,
+.sidebar-pin-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.sidebar-pin-toggle {
+  width: 40px;
+  height: 40px;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef7ff;
+  box-shadow: none;
+}
+
+.sidebar-pin-toggle.is-active {
+  background: rgba(110, 231, 255, 0.16);
+  border-color: rgba(110, 231, 255, 0.32);
 }
 
 .notification-alarm {
@@ -148,7 +207,7 @@ a:hover {
 }
 
 .sidebar {
-  width: 280px;
+  width: var(--sidebar-width);
   background: linear-gradient(165deg, #071021 0%, #112645 58%, #0f4d78 100%);
   color: #f8fbff;
   padding: 28px 18px;
@@ -160,6 +219,22 @@ a:hover {
   flex-direction: column;
   gap: 22px;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 40;
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sidebar-brand-copy {
+  min-width: 0;
+}
+
+.sidebar.is-collapsed.is-desktop {
+  transform: translateX(calc(-1 * (var(--sidebar-width) - var(--sidebar-collapsed-width))));
+  box-shadow: 0 16px 28px rgba(7, 16, 33, 0.2);
 }
 
 .sidebar-brand {
@@ -259,6 +334,37 @@ a:hover {
 
 .sidebar-logout:hover {
   background: rgba(7, 16, 33, 0.46);
+}
+
+.sidebar-edge-trigger {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 100vh;
+  border: 0;
+  background: transparent;
+  z-index: 35;
+  cursor: pointer;
+}
+
+.sidebar-edge-trigger__line {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 84px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(13, 71, 161, 0.12), rgba(15, 77, 120, 0.45));
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed.sidebar-auto .app-content {
+  margin-left: var(--sidebar-collapsed-width);
 }
 
 .notification-preferences-grid {
@@ -1169,11 +1275,19 @@ h1 {
   }
 
   .sidebar {
-    position: static;
-    width: 100%;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(84vw, 320px);
+    max-width: 320px;
+    height: 100vh;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: none;
+    box-shadow: 0 24px 48px rgba(7, 16, 33, 0.28);
+  }
+
+  .sidebar.is-collapsed.is-mobile {
+    transform: translateX(-100%);
   }
 
   .app-content {
@@ -1183,6 +1297,11 @@ h1 {
 
   .app-topbar {
     margin-bottom: 16px;
+  }
+
+  .app-topbar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .notification-alarm {
@@ -1232,6 +1351,19 @@ h1 {
   .sidebar-nav {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(7, 16, 33, 0.38);
+    z-index: 30;
+  }
+
+  .sidebar-edge-trigger {
+    display: none;
   }
 
   .notification-preferences-head,
