@@ -90,6 +90,10 @@
       {
         "file": "sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql",
         "useWhen": "A executer sur un environnement lot 14 existant si un CEO/DAF ne peut pas traiter son propre ticket maintenance dans Validations ou si le Journal d'audit est pollue par les logs de seed/no-op de notification governance."
+      },
+      {
+        "file": "sql/hotfix_2026_03_11_notifications_read_only_transaction.sql",
+        "useWhen": "A executer sur un environnement existant si /notifications ou le compteur sidebar remonte 'cannot execute INSERT in a read-only transaction' a cause des RPC de notifications marquees STABLE."
       }
     ]
   },

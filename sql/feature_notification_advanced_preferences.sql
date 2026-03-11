@@ -155,7 +155,7 @@ create or replace function public.notification_channel_enabled_advanced(
 )
 returns boolean
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public
 as $$
@@ -393,7 +393,7 @@ returns table (
   total_count bigint
 )
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public
 as $$

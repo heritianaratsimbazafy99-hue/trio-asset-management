@@ -78,6 +78,7 @@ Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
   - `docs/POST_DEPLOY_SMOKE_TEST_2026-03-11.md`
 - Un hotfix SQL ciblé existe pour la stabilisation post-lot-14 si nécessaire:
   - `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`
+  - `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`
 
 ## SQL de référence
 

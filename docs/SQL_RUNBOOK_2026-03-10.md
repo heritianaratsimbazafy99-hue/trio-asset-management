@@ -70,6 +70,7 @@ Patch ciblé hors chemin standard:
 
 - `sql/hotfix_admin_upsert_profile_ambiguous_id.sql`
 - `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`
+- `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`
 
 Autres scripts historiques classés comme supersédés dans le catalogue:
 
@@ -85,6 +86,11 @@ Quand utiliser `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.
 
 - si un CEO ou un DAF ne peut pas approuver ou rejeter son propre ticket maintenance dans `Validations`
 - si `Journal d'audit` est saturé par les logs de seed ou de no-op sur `notification_routing_rules` / `notification_template_configs`
+
+Quand utiliser `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`:
+
+- si `/notifications` affiche `cannot execute INSERT in a read-only transaction`
+- si le compteur sidebar de notifications echoue sur la meme erreur
 
 ## 3. Rattrapage prod simplifié
 
