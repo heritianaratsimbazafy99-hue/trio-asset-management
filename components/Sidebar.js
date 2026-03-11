@@ -145,18 +145,18 @@ export default function Sidebar() {
   const navItems = [
     { path: "/dashboard", label: "Dashboard", count: null },
     { path: "/notifications", label: "Notifications", count: counts.notifications },
-    ...(canSeeNotificationGovernance
-      ? [{ path: "/notifications/governance", label: "Gouvernance notif", count: null }]
-      : []),
-    ...(canSeeNotificationOperations
-      ? [{ path: "/notifications/operations", label: "Supervision email", count: null }]
-      : []),
     { path: "/assets", label: "Immobilisations", count: counts.assets },
     { path: "/incidents", label: "Incidents", count: counts.incidents },
     { path: "/maintenance", label: "Maintenance", count: counts.maintenance },
-    { path: "/replacement-plan", label: "Remplacement", count: null },
-    ...(canSeeAdmin ? [{ path: "/rules", label: "Règles", count: null }] : []),
     ...(canSeeApprovals ? [{ path: "/approvals", label: "Validations", count: null }] : []),
+    ...(canSeeNotificationOperations
+      ? [{ path: "/notifications/operations", label: "Supervision email", count: null }]
+      : []),
+    { path: "/replacement-plan", label: "Remplacement", count: null },
+    ...(canSeeNotificationGovernance
+      ? [{ path: "/notifications/governance", label: "Gouvernance notif", count: null }]
+      : []),
+    ...(canSeeAdmin ? [{ path: "/rules", label: "Règles", count: null }] : []),
     ...(canSeeAudit ? [{ path: "/audit-logs", label: "Journal d'audit", count: null }] : []),
     ...(canSeeAdmin ? [{ path: "/admin/users", label: "Administration", count: null }] : []),
   ];
