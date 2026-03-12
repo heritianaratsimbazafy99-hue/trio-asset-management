@@ -96,7 +96,7 @@ Quand utiliser `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`:
 Quand utiliser `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`:
 
 - si CEO, DAF ou `RESPONSABLE_MAINTENANCE` doivent pouvoir cloturer incidents et maintenances sur toutes les societes
-- si les tickets maintenance ou les demandes de rebus doivent etre approuvables par ces roles sans limitation par structure
+- si les tickets maintenance et rebus doivent rester approuvables par CEO/DAF, tout en laissant le `RESPONSABLE_MAINTENANCE` creer ces demandes sur l'ensemble des structures
 
 ## 3. Rattrapage prod simplifié
 

@@ -687,7 +687,7 @@ begin
       'requested_status', 'EN_ATTENTE_VALIDATION'
     ),
     1,
-    array['CEO', 'DAF', 'RESPONSABLE_MAINTENANCE']
+    array['CEO', 'DAF']
   );
 
   update public.maintenance
@@ -717,7 +717,7 @@ begin
     p_reason,
     '{}'::jsonb,
     1,
-    array['CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE']
+    array['CEO', 'DAF', 'RESPONSABLE']
   );
 end;
 $$;

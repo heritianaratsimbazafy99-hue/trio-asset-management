@@ -1,8 +1,14 @@
 -- Hotfix - cross-company operational leadership access
 -- Date: 2026-03-12
 --
--- Run on an existing lot 14 environment when CEO / DAF /
--- RESPONSABLE_MAINTENANCE must act across all companies on:
+-- Run on an existing lot 14 environment when cross-company access must be
+-- aligned as follows:
+-- - CEO / DAF / RESPONSABLE_MAINTENANCE can operate across all companies
+-- - only CEO / DAF approve workflow tickets
+-- - RESPONSABLE_MAINTENANCE can create maintenance / rebus requests
+--   but is not an approver
+--
+-- Target scope:
 -- 1) incident closure
 -- 2) maintenance closure
 -- 3) maintenance workflow approvals
@@ -338,7 +344,7 @@ begin
       'requested_status', 'EN_ATTENTE_VALIDATION'
     ),
     1,
-    array['CEO', 'DAF', 'RESPONSABLE_MAINTENANCE']
+    array['CEO', 'DAF']
   );
 
   update public.maintenance
@@ -368,7 +374,7 @@ begin
     p_reason,
     '{}'::jsonb,
     1,
-    array['CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE']
+    array['CEO', 'DAF', 'RESPONSABLE']
   );
 end;
 $$;
@@ -392,9 +398,9 @@ from (
     cross join lateral unnest(
       case
         when upper(coalesce(wr.request_type, '')) = 'MAINTENANCE_START'
-          then coalesce(wr.approver_roles, array[]::text[]) || array['CEO', 'DAF', 'RESPONSABLE_MAINTENANCE']
+          then array['CEO', 'DAF']::text[]
         when upper(coalesce(wr.request_type, '')) = 'ASSET_REBUS'
-          then coalesce(wr.approver_roles, array[]::text[]) || array['CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE']
+          then array['CEO', 'DAF', 'RESPONSABLE']::text[]
         else coalesce(wr.approver_roles, array[]::text[])
       end
     ) as expanded(role_name)
@@ -419,7 +425,7 @@ as $$
   select case
     when upper(coalesce(p_channel, '')) not in ('APP', 'EMAIL') then false
     when upper(coalesce(p_notification_type, '')) = 'WORKFLOW_PENDING'
-      then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE')
+      then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE')
     when upper(coalesce(p_notification_type, '')) in ('WORKFLOW_APPROVED', 'WORKFLOW_REJECTED', 'WORKFLOW_FAILED')
       then true
     when upper(coalesce(p_notification_type, '')) = 'INCIDENT_ALERT'
@@ -443,8 +449,8 @@ as $$
   select case lower(coalesce(p_preference_key, ''))
     when 'pending_asset_delete' then upper(coalesce(p_role, '')) = 'CEO'
     when 'pending_purchase_value_change' then upper(coalesce(p_role, '')) = 'CEO'
-    when 'pending_maintenance_ticket' then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE_MAINTENANCE')
-    when 'pending_asset_rebus' then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE')
+    when 'pending_maintenance_ticket' then upper(coalesce(p_role, '')) in ('CEO', 'DAF')
+    when 'pending_asset_rebus' then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE')
     when 'result_asset_delete' then true
     when 'result_purchase_value_change' then true
     when 'result_maintenance_ticket' then true
@@ -464,10 +470,10 @@ insert into public.notification_routing_rules (
   is_enabled
 )
 values
-  ('WORKFLOW_PENDING', 'MAINTENANCE_START', 'APP', 'RESPONSABLE_MAINTENANCE', true),
-  ('WORKFLOW_PENDING', 'MAINTENANCE_START', 'EMAIL', 'RESPONSABLE_MAINTENANCE', true),
-  ('WORKFLOW_PENDING', 'ASSET_REBUS', 'APP', 'RESPONSABLE_MAINTENANCE', true),
-  ('WORKFLOW_PENDING', 'ASSET_REBUS', 'EMAIL', 'RESPONSABLE_MAINTENANCE', true)
+  ('WORKFLOW_PENDING', 'MAINTENANCE_START', 'APP', 'RESPONSABLE_MAINTENANCE', false),
+  ('WORKFLOW_PENDING', 'MAINTENANCE_START', 'EMAIL', 'RESPONSABLE_MAINTENANCE', false),
+  ('WORKFLOW_PENDING', 'ASSET_REBUS', 'APP', 'RESPONSABLE_MAINTENANCE', false),
+  ('WORKFLOW_PENDING', 'ASSET_REBUS', 'EMAIL', 'RESPONSABLE_MAINTENANCE', false)
 on conflict (notification_type, request_type, channel, role) do update
 set
   is_enabled = excluded.is_enabled,
@@ -541,9 +547,9 @@ begin
     when v_type = 'WORKFLOW_PENDING' and v_request_type in ('ASSET_DELETE', 'ASSET_PURCHASE_VALUE_CHANGE')
       then v_role = 'CEO'
     when v_type = 'WORKFLOW_PENDING' and v_request_type = 'MAINTENANCE_START'
-      then v_role in ('CEO', 'DAF', 'RESPONSABLE_MAINTENANCE')
+      then v_role in ('CEO', 'DAF')
     when v_type = 'WORKFLOW_PENDING' and v_request_type = 'ASSET_REBUS'
-      then v_role in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE')
+      then v_role in ('CEO', 'DAF', 'RESPONSABLE')
     when v_type = 'INCIDENT_ALERT'
       then v_role in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE')
     else true

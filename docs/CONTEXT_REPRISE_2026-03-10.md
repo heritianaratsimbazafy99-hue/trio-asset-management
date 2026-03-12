@@ -79,7 +79,7 @@ Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
 - Un hotfix SQL ciblé existe pour la stabilisation post-lot-14 si nécessaire:
   - `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`
   - `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`
-  - `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`
+  - `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql` pour l'alignement cross-societes CEO/DAF/Resp. maintenance avec approbation workflow conservee sur CEO/DAF
 
 ## SQL de référence
 

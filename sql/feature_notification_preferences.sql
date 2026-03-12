@@ -53,7 +53,7 @@ as $$
   select case
     when upper(coalesce(p_channel, '')) not in ('APP', 'EMAIL') then false
     when upper(coalesce(p_notification_type, '')) = 'WORKFLOW_PENDING'
-      then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE')
+      then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE')
     when upper(coalesce(p_notification_type, '')) in ('WORKFLOW_APPROVED', 'WORKFLOW_REJECTED', 'WORKFLOW_FAILED')
       then true
     when upper(coalesce(p_notification_type, '')) = 'INCIDENT_ALERT'

@@ -247,9 +247,8 @@ export default function NotificationGovernancePage() {
           <div>
             <h3>Cadre de gouvernance</h3>
             <p style={{ color: "var(--muted)", marginTop: 4 }}>
-              Les tickets maintenance en attente restent limités aux approbateurs CEO, DAF et
-              Resp. maintenance. Les règles de routage complètent les rôles d'approbation, elles
-              ne les élargissent pas.
+              Les tickets maintenance en attente restent limités aux approbateurs CEO et DAF. Les
+              règles de routage complètent les rôles d'approbation, elles ne les élargissent pas.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

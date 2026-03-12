@@ -79,7 +79,7 @@ export default function NewMaintenance() {
     <Layout>
       <h1>Planifier une maintenance</h1>
       <div className="alert-warning" style={{ marginBottom: 14 }}>
-        Toute nouvelle maintenance passe désormais par un ticket puis par une validation CEO/DAF/Resp. maintenance avant passage en cours.
+        Toute nouvelle maintenance passe désormais par un ticket puis par une validation CEO/DAF avant passage en cours.
       </div>
 
       {error && <div className="alert-error">{error}</div>}

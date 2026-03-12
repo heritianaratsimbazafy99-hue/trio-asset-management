@@ -64,7 +64,7 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
 | `sql/hotfix_admin_upsert_profile_ambiguous_id.sql` | Si un environnement possede encore l'ancienne version ambigue de `admin_upsert_profile` |
 | `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql` | Si un environnement lot 14 existant ne permet pas a un CEO/DAF de traiter son propre ticket maintenance dans `Validations` ou si les logs de gouvernance notifications polluent le `Journal d'audit` |
 | `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql` | Si `/notifications` ou le compteur sidebar echoue avec `cannot execute INSERT in a read-only transaction` a cause des RPC notifications encore marquees `STABLE` |
-| `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql` | Si CEO, DAF et `RESPONSABLE_MAINTENANCE` doivent agir sur maintenance, incidents et workflows maintenance/rebus pour toutes les societes |
+| `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql` | Si CEO, DAF et `RESPONSABLE_MAINTENANCE` doivent agir cross-societes sur maintenance et incidents, avec approbation workflow reservee au CEO/DAF et creation maintenance/rebus ouverte au `RESPONSABLE_MAINTENANCE` |
 
 ## 4. Regles d'exploitation
 
