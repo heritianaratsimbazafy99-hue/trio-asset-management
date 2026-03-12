@@ -51,15 +51,15 @@ drop policy if exists incidents_update_authorized on public.incidents;
 create policy incidents_update_authorized
 on public.incidents
 for update
-using (public.is_ceo() or public.is_maintenance_manager())
-with check (public.is_ceo() or public.is_maintenance_manager());
+using (public.is_ceo() or public.is_daf() or public.is_maintenance_manager())
+with check (public.is_ceo() or public.is_daf() or public.is_maintenance_manager());
 
 drop policy if exists maintenance_update_authorized on public.maintenance;
 create policy maintenance_update_authorized
 on public.maintenance
 for update
-using (public.is_ceo() or public.is_maintenance_manager())
-with check (public.is_ceo() or public.is_maintenance_manager());
+using (public.is_ceo() or public.is_daf() or public.is_maintenance_manager())
+with check (public.is_ceo() or public.is_daf() or public.is_maintenance_manager());
 
 -- =====================================================================
 -- 2) Profiles policies hardening + secure admin RPC

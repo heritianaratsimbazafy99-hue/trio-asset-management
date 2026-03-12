@@ -5,8 +5,8 @@ import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
 import { computeMaintenanceSlaStatus } from "../../lib/sla";
 import {
-  APP_ROLES,
   getCurrentUserProfile,
+  OPERATIONAL_LEADERSHIP_ROLES,
   hasOneRole,
 } from "../../lib/accessControl";
 import {
@@ -49,10 +49,7 @@ export default function MaintenancePage() {
   const [error, setError] = useState("");
   const [usersMap, setUsersMap] = useState({});
 
-  const canCloseMaintenance = hasOneRole(userRole, [
-    APP_ROLES.CEO,
-    APP_ROLES.RESPONSABLE_MAINTENANCE,
-  ]);
+  const canCloseMaintenance = hasOneRole(userRole, OPERATIONAL_LEADERSHIP_ROLES);
 
   async function fetchData() {
     const [{ data }, { data: replacementData }, { profile }] = await Promise.all([
@@ -83,7 +80,7 @@ export default function MaintenancePage() {
 
   async function markCompleted(id) {
     if (!canCloseMaintenance) {
-      setError("Seuls le CEO et les responsables maintenance peuvent cloturer.");
+      setError("Seuls le CEO, le DAF et les responsables maintenance peuvent cloturer.");
       return;
     }
 

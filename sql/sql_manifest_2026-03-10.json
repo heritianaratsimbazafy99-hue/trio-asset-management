@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-11",
+  "updatedAt": "2026-03-12",
   "sourceOfTruth": {
     "runbook": "docs/SQL_RUNBOOK_2026-03-10.md",
     "catalog": "docs/SQL_CATALOG_2026-03-10.md"
@@ -94,6 +94,10 @@
       {
         "file": "sql/hotfix_2026_03_11_notifications_read_only_transaction.sql",
         "useWhen": "A executer sur un environnement existant si /notifications ou le compteur sidebar remonte 'cannot execute INSERT in a read-only transaction' a cause des RPC de notifications marquees STABLE."
+      },
+      {
+        "file": "sql/hotfix_2026_03_12_cross_company_operational_leadership.sql",
+        "useWhen": "A executer sur un environnement existant si CEO, DAF et RESPONSABLE_MAINTENANCE doivent pouvoir traiter maintenance, incidents et workflows maintenance/rebus sur toutes les societes."
       }
     ]
   },

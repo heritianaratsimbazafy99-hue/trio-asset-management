@@ -435,7 +435,9 @@ export default function AssetDetailPage() {
   async function requestAssetRebus() {
     if (!asset?.id) return;
     if (!canSignalIrreparable) {
-      setStatusMessage("Action refusée: seul le CEO ou le RESPONSABLE_MAINTENANCE peut signaler un actif irréparable.");
+      setStatusMessage(
+        "Action refusée: seul le CEO, le DAF ou le RESPONSABLE_MAINTENANCE peut signaler un actif irréparable."
+      );
       return;
     }
 

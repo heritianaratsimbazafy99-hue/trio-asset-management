@@ -148,7 +148,8 @@ export default function NotificationOperationsPage() {
     <Layout>
       <h1>Supervision email</h1>
       <p style={{ marginBottom: 12 }}>
-        Rôle connecté: {userRole || "-"} | Tous les tickets en attente restent validés par CEO et DAF.
+        Rôle connecté: {userRole || "-"} | Les tickets maintenance en attente restent validés par
+        CEO, DAF ou Resp. maintenance selon le routage actif.
       </p>
 
       <div className="dashboard-grid" style={{ marginBottom: 16 }}>

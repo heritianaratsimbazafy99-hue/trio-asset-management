@@ -135,7 +135,7 @@ using (
 );
 
 -- INCIDENTS: everyone authenticated can read/insert,
--- only CEO or RESPONSABLE_MAINTENANCE can update (incl. closure)
+-- only CEO, DAF, or RESPONSABLE_MAINTENANCE can update (incl. closure)
 create policy incidents_select_authenticated
 on public.incidents
 for select
@@ -150,14 +150,14 @@ create policy incidents_update_authorized
 on public.incidents
 for update
 using (
-  public.is_ceo() or public.is_maintenance_manager()
+  public.is_ceo() or public.is_daf() or public.is_maintenance_manager()
 )
 with check (
-  public.is_ceo() or public.is_maintenance_manager()
+  public.is_ceo() or public.is_daf() or public.is_maintenance_manager()
 );
 
 -- MAINTENANCE: everyone authenticated can read/insert,
--- only CEO or RESPONSABLE_MAINTENANCE can update (incl. closure)
+-- only CEO, DAF, or RESPONSABLE_MAINTENANCE can update (incl. closure)
 create policy maintenance_select_authenticated
 on public.maintenance
 for select
@@ -172,10 +172,10 @@ create policy maintenance_update_authorized
 on public.maintenance
 for update
 using (
-  public.is_ceo() or public.is_maintenance_manager()
+  public.is_ceo() or public.is_daf() or public.is_maintenance_manager()
 )
 with check (
-  public.is_ceo() or public.is_maintenance_manager()
+  public.is_ceo() or public.is_daf() or public.is_maintenance_manager()
 );
 
 -- ATTACHMENTS metadata: authenticated users can read/insert/update/delete

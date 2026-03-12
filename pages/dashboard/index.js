@@ -19,7 +19,12 @@ import {
 } from "recharts";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
-import { APP_ROLES, getCurrentUserProfile, hasOneRole } from "../../lib/accessControl";
+import {
+  APP_ROLES,
+  OPERATIONAL_LEADERSHIP_ROLES,
+  getCurrentUserProfile,
+  hasOneRole,
+} from "../../lib/accessControl";
 import { formatMGA } from "../../lib/currency";
 import {
   DATA_HEALTH_ISSUES,
@@ -155,10 +160,7 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [riskPage, setRiskPage] = useState(1);
 
-  const canCloseOps = hasOneRole(userRole, [
-    APP_ROLES.CEO,
-    APP_ROLES.RESPONSABLE_MAINTENANCE,
-  ]);
+  const canCloseOps = hasOneRole(userRole, OPERATIONAL_LEADERSHIP_ROLES);
   const canReadDataHealth = hasOneRole(userRole, [
     APP_ROLES.CEO,
     APP_ROLES.DAF,

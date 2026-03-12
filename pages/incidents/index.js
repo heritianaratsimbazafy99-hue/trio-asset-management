@@ -4,8 +4,8 @@ import Layout from "../../components/Layout";
 import StatusBadge from "../../components/StatusBadge";
 import { supabase } from "../../lib/supabaseClient";
 import {
-  APP_ROLES,
   getCurrentUserProfile,
+  OPERATIONAL_LEADERSHIP_ROLES,
   hasOneRole,
 } from "../../lib/accessControl";
 import {
@@ -20,10 +20,7 @@ export default function IncidentsPage() {
   const [error, setError] = useState("");
   const [usersMap, setUsersMap] = useState({});
 
-  const canCloseIncident = hasOneRole(userRole, [
-    APP_ROLES.CEO,
-    APP_ROLES.RESPONSABLE_MAINTENANCE,
-  ]);
+  const canCloseIncident = hasOneRole(userRole, OPERATIONAL_LEADERSHIP_ROLES);
 
   async function fetchIncidents() {
     const [{ data }, { profile }] = await Promise.all([
@@ -49,7 +46,7 @@ export default function IncidentsPage() {
 
   async function closeIncident(id) {
     if (!canCloseIncident) {
-      setError("Seuls le CEO et les responsables maintenance peuvent cloturer un incident.");
+      setError("Seuls le CEO, le DAF et les responsables maintenance peuvent cloturer un incident.");
       return;
     }
 

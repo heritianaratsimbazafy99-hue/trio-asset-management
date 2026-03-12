@@ -1,6 +1,6 @@
 # Runbook SQL Trio Asset Management
 
-Date de mise à jour: 2026-03-11
+Date de mise à jour: 2026-03-12
 
 Ce document définit l'ordre SQL de référence pour:
 
@@ -71,6 +71,7 @@ Patch ciblé hors chemin standard:
 - `sql/hotfix_admin_upsert_profile_ambiguous_id.sql`
 - `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`
 - `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`
+- `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`
 
 Autres scripts historiques classés comme supersédés dans le catalogue:
 
@@ -91,6 +92,11 @@ Quand utiliser `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`:
 
 - si `/notifications` affiche `cannot execute INSERT in a read-only transaction`
 - si le compteur sidebar de notifications echoue sur la meme erreur
+
+Quand utiliser `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`:
+
+- si CEO, DAF ou `RESPONSABLE_MAINTENANCE` doivent pouvoir cloturer incidents et maintenances sur toutes les societes
+- si les tickets maintenance ou les demandes de rebus doivent etre approuvables par ces roles sans limitation par structure
 
 ## 3. Rattrapage prod simplifié
 

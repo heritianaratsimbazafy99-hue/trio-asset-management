@@ -70,8 +70,8 @@ as $$
   select case lower(coalesce(p_preference_key, ''))
     when 'pending_asset_delete' then upper(coalesce(p_role, '')) = 'CEO'
     when 'pending_purchase_value_change' then upper(coalesce(p_role, '')) = 'CEO'
-    when 'pending_maintenance_ticket' then upper(coalesce(p_role, '')) in ('CEO', 'DAF')
-    when 'pending_asset_rebus' then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE')
+    when 'pending_maintenance_ticket' then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE_MAINTENANCE')
+    when 'pending_asset_rebus' then upper(coalesce(p_role, '')) in ('CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE')
     when 'result_asset_delete' then true
     when 'result_purchase_value_change' then true
     when 'result_maintenance_ticket' then true

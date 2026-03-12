@@ -224,8 +224,8 @@ begin
   end if;
 
   if v_request_type = 'ASSET_REBUS'
-     and v_requester_role not in ('CEO', 'RESPONSABLE_MAINTENANCE') then
-    raise exception 'forbidden: only CEO or RESPONSABLE_MAINTENANCE can signal an asset as irreparable';
+     and v_requester_role not in ('CEO', 'DAF', 'RESPONSABLE_MAINTENANCE') then
+    raise exception 'forbidden: only CEO, DAF, or RESPONSABLE_MAINTENANCE can signal an asset as irreparable';
   end if;
 
   select
@@ -687,7 +687,7 @@ begin
       'requested_status', 'EN_ATTENTE_VALIDATION'
     ),
     1,
-    array['CEO', 'DAF']
+    array['CEO', 'DAF', 'RESPONSABLE_MAINTENANCE']
   );
 
   update public.maintenance
@@ -717,7 +717,7 @@ begin
     p_reason,
     '{}'::jsonb,
     1,
-    array['CEO', 'DAF', 'RESPONSABLE']
+    array['CEO', 'DAF', 'RESPONSABLE', 'RESPONSABLE_MAINTENANCE']
   );
 end;
 $$;

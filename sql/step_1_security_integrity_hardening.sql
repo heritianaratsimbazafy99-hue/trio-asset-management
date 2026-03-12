@@ -164,8 +164,9 @@ begin
   if upper(coalesce(new.status, '')) = 'RESOLU' then
     v_claim_role := coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), '');
 
-    if v_claim_role = 'authenticated' and not (public.is_ceo() or public.is_maintenance_manager()) then
-      raise exception 'forbidden: only CEO or RESPONSABLE_MAINTENANCE can close incidents';
+    if v_claim_role = 'authenticated'
+       and not (public.is_ceo() or public.is_daf() or public.is_maintenance_manager()) then
+      raise exception 'forbidden: only CEO, DAF, or RESPONSABLE_MAINTENANCE can close incidents';
     end if;
 
     if new.resolved_at is null then
