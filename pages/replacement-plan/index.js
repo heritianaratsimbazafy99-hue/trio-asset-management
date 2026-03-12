@@ -560,108 +560,108 @@ export default function ReplacementPlanPage() {
         </table>
       </div>
 
-      <div className="chart-grid">
-        <div className="card">
-          <h3>Simulation détaillée</h3>
-          {selectedPlanBase && scenarioPlan ? (
-            <>
-              <p style={{ marginBottom: 12 }}>
-                <strong>{selectedPlanBase.asset.name}</strong>
-                {" · "}
-                {selectedPlanBase.asset.organisations?.name || "-"}
-              </p>
+      <div className="card replacement-simulation-card">
+        <h3>Simulation détaillée</h3>
+        {selectedPlanBase && scenarioPlan ? (
+          <>
+            <p style={{ marginBottom: 12 }}>
+              <strong>{selectedPlanBase.asset.name}</strong>
+              {" · "}
+              {selectedPlanBase.asset.organisations?.name || "-"}
+            </p>
 
-              <div className="form-grid" style={{ marginBottom: 16 }}>
-                <div className="form-field">
-                  <label>CAPEX remplacement</label>
-                  <input
-                    className="input"
-                    type="number"
-                    value={scenario.replacementCapex}
-                    onChange={(e) =>
-                      setScenario((prev) => ({ ...prev, replacementCapex: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="form-field">
-                  <label>OPEX annuel nouvel actif</label>
-                  <input
-                    className="input"
-                    type="number"
-                    value={scenario.annualNewAssetOpex}
-                    onChange={(e) =>
-                      setScenario((prev) => ({ ...prev, annualNewAssetOpex: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Horizon (années)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="1"
-                    value={scenario.horizonYears}
-                    onChange={(e) =>
-                      setScenario((prev) => ({ ...prev, horizonYears: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Croissance OPEX actif existant (%)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    value={scenario.oldAssetOpexGrowthRate}
-                    onChange={(e) =>
-                      setScenario((prev) => ({
-                        ...prev,
-                        oldAssetOpexGrowthRate: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Valeur de récupération</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    value={scenario.salvageRecovery}
-                    onChange={(e) =>
-                      setScenario((prev) => ({ ...prev, salvageRecovery: e.target.value }))
-                    }
-                  />
-                </div>
+            <div className="form-grid" style={{ marginBottom: 16 }}>
+              <div className="form-field">
+                <label>CAPEX remplacement</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={scenario.replacementCapex}
+                  onChange={(e) =>
+                    setScenario((prev) => ({ ...prev, replacementCapex: e.target.value }))
+                  }
+                />
               </div>
-
-              <div className="dashboard-grid" style={{ marginBottom: 12 }}>
-                <div className="card kpi-solid">
-                  <h3>CAPEX net</h3>
-                  <p>{formatMGA(scenarioPlan.netCapex)}</p>
-                </div>
-                <div className="card">
-                  <h3>Coût conserver</h3>
-                  <p>{formatMGA(scenarioPlan.keepTotalCost)}</p>
-                </div>
-                <div className="card">
-                  <h3>Coût remplacer</h3>
-                  <p>{formatMGA(scenarioPlan.replaceTotalCost)}</p>
-                </div>
-                <div className="card">
-                  <h3>Gain net</h3>
-                  <p>{formatMGA(scenarioPlan.netSavings)}</p>
-                </div>
-                <div className="card">
-                  <h3>ROI</h3>
-                  <p>{scenarioPlan.roiPct.toFixed(1)}%</p>
-                </div>
-                <div className="card">
-                  <h3>Payback</h3>
-                  <p>{formatPayback(scenarioPlan.paybackYears)}</p>
-                </div>
+              <div className="form-field">
+                <label>OPEX annuel nouvel actif</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={scenario.annualNewAssetOpex}
+                  onChange={(e) =>
+                    setScenario((prev) => ({ ...prev, annualNewAssetOpex: e.target.value }))
+                  }
+                />
               </div>
+              <div className="form-field">
+                <label>Horizon (années)</label>
+                <input
+                  className="input"
+                  type="number"
+                  min="1"
+                  value={scenario.horizonYears}
+                  onChange={(e) =>
+                    setScenario((prev) => ({ ...prev, horizonYears: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="form-field">
+                <label>Croissance OPEX actif existant (%)</label>
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
+                  value={scenario.oldAssetOpexGrowthRate}
+                  onChange={(e) =>
+                    setScenario((prev) => ({
+                      ...prev,
+                      oldAssetOpexGrowthRate: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="form-field">
+                <label>Valeur de récupération</label>
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
+                  value={scenario.salvageRecovery}
+                  onChange={(e) =>
+                    setScenario((prev) => ({ ...prev, salvageRecovery: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
 
+            <div className="dashboard-grid" style={{ marginBottom: 12 }}>
+              <div className="card kpi-solid">
+                <h3>CAPEX net</h3>
+                <p>{formatMGA(scenarioPlan.netCapex)}</p>
+              </div>
+              <div className="card">
+                <h3>Coût conserver</h3>
+                <p>{formatMGA(scenarioPlan.keepTotalCost)}</p>
+              </div>
+              <div className="card">
+                <h3>Coût remplacer</h3>
+                <p>{formatMGA(scenarioPlan.replaceTotalCost)}</p>
+              </div>
+              <div className="card">
+                <h3>Gain net</h3>
+                <p>{formatMGA(scenarioPlan.netSavings)}</p>
+              </div>
+              <div className="card">
+                <h3>ROI</h3>
+                <p>{scenarioPlan.roiPct.toFixed(1)}%</p>
+              </div>
+              <div className="card">
+                <h3>Payback</h3>
+                <p>{formatPayback(scenarioPlan.paybackYears)}</p>
+              </div>
+            </div>
+
+            <div className="replacement-simulation-chart">
               <ResponsiveContainer width="100%" height={320}>
                 <LineChart data={scenarioPlan.projection}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -674,8 +674,10 @@ export default function ReplacementPlanPage() {
                   <Line type="monotone" dataKey="cumulativeSavings" stroke="#0b3d91" strokeWidth={2} name="Gain cumulé" />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
 
-              <table className="table" style={{ marginTop: 16 }}>
+            <div className="replacement-projection-wrap">
+              <table className="table replacement-projection-table" style={{ marginTop: 16 }}>
                 <thead>
                   <tr>
                     <th>Année</th>
@@ -699,11 +701,11 @@ export default function ReplacementPlanPage() {
                   ))}
                 </tbody>
               </table>
-            </>
-          ) : (
-            <p>Sélectionne un actif dans la liste pour lancer la simulation détaillée.</p>
-          )}
-        </div>
+            </div>
+          </>
+        ) : (
+          <p>Sélectionne un actif dans la liste pour lancer la simulation détaillée.</p>
+        )}
       </div>
     </Layout>
   );

@@ -55,6 +55,7 @@ export default function NotificationsPage() {
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState("UNREAD");
   const [userRole, setUserRole] = useState("");
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -248,97 +249,6 @@ export default function NotificationsPage() {
       )}
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="dashboard-header-row" style={{ marginBottom: 10 }}>
-          <div>
-            <h3>Préférences notifications</h3>
-            <p style={{ color: "var(--muted)", marginTop: 4 }}>
-              Les tickets de maintenance en attente sont validés par le CEO et le DAF. Active
-              uniquement les canaux qui te sont utiles.
-            </p>
-          </div>
-          <button className="btn-primary" disabled={preferencesSaving || preferencesLoading} onClick={savePreferences}>
-            {preferencesSaving ? "Enregistrement..." : "Enregistrer"}
-          </button>
-        </div>
-
-        {preferencesLoading ? (
-          <p>Chargement des préférences...</p>
-        ) : preferences ? (
-          <div className="notification-preferences-grid">
-            <div className="notification-preferences-head">
-              <span>Type</span>
-              <span>Application</span>
-              <span>Email</span>
-            </div>
-
-            {NOTIFICATION_PREFERENCE_DEFINITIONS.map((definition) => {
-              const fields = NOTIFICATION_PREFERENCE_FIELDS[definition.type];
-              return (
-                <div key={definition.type} className="notification-preference-row">
-                  <div className="notification-preference-copy">
-                    <h4>{definition.title}</h4>
-                    <p>{definition.description}</p>
-                  </div>
-                  <label className="notification-toggle-cell">
-                    <input
-                      type="checkbox"
-                      className="notification-toggle"
-                      checked={Boolean(preferences?.[fields.app])}
-                      onChange={() => togglePreference(fields.app)}
-                    />
-                  </label>
-                  <label className="notification-toggle-cell">
-                    <input
-                      type="checkbox"
-                      className="notification-toggle"
-                      checked={Boolean(preferences?.[fields.email])}
-                      onChange={() => togglePreference(fields.email)}
-                    />
-                  </label>
-                </div>
-              );
-            })}
-
-            <div className="notification-preferences-head" style={{ marginTop: 16 }}>
-              <span>Workflow fin</span>
-              <span>Application</span>
-              <span>Email</span>
-            </div>
-
-            {NOTIFICATION_ADVANCED_PREFERENCE_DEFINITIONS.map((definition) => {
-              const fields = getAdvancedNotificationPreferenceFields(definition.key);
-              return (
-                <div key={definition.key} className="notification-preference-row">
-                  <div className="notification-preference-copy">
-                    <h4>{definition.title}</h4>
-                    <p>{definition.description}</p>
-                  </div>
-                  <label className="notification-toggle-cell">
-                    <input
-                      type="checkbox"
-                      className="notification-toggle"
-                      checked={Boolean(preferences?.advanced_preferences?.[fields.app])}
-                      onChange={() => toggleAdvancedPreference(definition.key, "app")}
-                    />
-                  </label>
-                  <label className="notification-toggle-cell">
-                    <input
-                      type="checkbox"
-                      className="notification-toggle"
-                      checked={Boolean(preferences?.advanced_preferences?.[fields.email])}
-                      onChange={() => toggleAdvancedPreference(definition.key, "email")}
-                    />
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p>Impossible de charger les préférences.</p>
-        )}
-      </div>
-
-      <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12 }}>
           <select
             className="select"
@@ -427,6 +337,121 @@ export default function NotificationsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      <div className="card notification-preferences-panel">
+        <div className="dashboard-header-row notification-preferences-panel__header">
+          <div>
+            <h3>Préférences notifications</h3>
+            <p style={{ color: "var(--muted)", marginTop: 4 }}>
+              Ouvre ce panneau uniquement si tu veux ajuster les canaux. Les notifications restent
+              la priorité de lecture sur cette page.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <span className="notification-preferences-panel__hint">
+              Réglages personnels app + email
+            </span>
+            {preferencesOpen && (
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={preferencesSaving || preferencesLoading}
+                onClick={savePreferences}
+              >
+                {preferencesSaving ? "Enregistrement..." : "Enregistrer"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-secondary"
+              aria-expanded={preferencesOpen}
+              onClick={() => setPreferencesOpen((previous) => !previous)}
+            >
+              {preferencesOpen ? "Masquer les préférences" : "Ouvrir les préférences"}
+            </button>
+          </div>
+        </div>
+
+        {preferencesOpen && (
+          <div className="notification-preferences-panel__body">
+            {preferencesLoading ? (
+              <p>Chargement des préférences...</p>
+            ) : preferences ? (
+              <div className="notification-preferences-grid">
+                <div className="notification-preferences-head">
+                  <span>Type</span>
+                  <span>Application</span>
+                  <span>Email</span>
+                </div>
+
+                {NOTIFICATION_PREFERENCE_DEFINITIONS.map((definition) => {
+                  const fields = NOTIFICATION_PREFERENCE_FIELDS[definition.type];
+                  return (
+                    <div key={definition.type} className="notification-preference-row">
+                      <div className="notification-preference-copy">
+                        <h4>{definition.title}</h4>
+                        <p>{definition.description}</p>
+                      </div>
+                      <label className="notification-toggle-cell">
+                        <input
+                          type="checkbox"
+                          className="notification-toggle"
+                          checked={Boolean(preferences?.[fields.app])}
+                          onChange={() => togglePreference(fields.app)}
+                        />
+                      </label>
+                      <label className="notification-toggle-cell">
+                        <input
+                          type="checkbox"
+                          className="notification-toggle"
+                          checked={Boolean(preferences?.[fields.email])}
+                          onChange={() => togglePreference(fields.email)}
+                        />
+                      </label>
+                    </div>
+                  );
+                })}
+
+                <div className="notification-preferences-head" style={{ marginTop: 16 }}>
+                  <span>Workflow fin</span>
+                  <span>Application</span>
+                  <span>Email</span>
+                </div>
+
+                {NOTIFICATION_ADVANCED_PREFERENCE_DEFINITIONS.map((definition) => {
+                  const fields = getAdvancedNotificationPreferenceFields(definition.key);
+                  return (
+                    <div key={definition.key} className="notification-preference-row">
+                      <div className="notification-preference-copy">
+                        <h4>{definition.title}</h4>
+                        <p>{definition.description}</p>
+                      </div>
+                      <label className="notification-toggle-cell">
+                        <input
+                          type="checkbox"
+                          className="notification-toggle"
+                          checked={Boolean(preferences?.advanced_preferences?.[fields.app])}
+                          onChange={() => toggleAdvancedPreference(definition.key, "app")}
+                        />
+                      </label>
+                      <label className="notification-toggle-cell">
+                        <input
+                          type="checkbox"
+                          className="notification-toggle"
+                          checked={Boolean(preferences?.advanced_preferences?.[fields.email])}
+                          onChange={() => toggleAdvancedPreference(definition.key, "email")}
+                        />
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p>Impossible de charger les préférences.</p>
+            )}
           </div>
         )}
       </div>

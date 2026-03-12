@@ -506,6 +506,24 @@ a:hover {
   gap: 12px;
 }
 
+.notification-preferences-panel {
+  margin-top: 16px;
+}
+
+.notification-preferences-panel__header {
+  margin-bottom: 0;
+}
+
+.notification-preferences-panel__hint {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notification-preferences-panel__body {
+  margin-top: 18px;
+}
+
 .notification-preference-row {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) 140px 140px;
@@ -718,6 +736,24 @@ h1 {
   padding: 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+}
+
+.replacement-simulation-card {
+  margin-top: 16px;
+}
+
+.replacement-simulation-chart {
+  width: 100%;
+}
+
+.replacement-projection-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.replacement-projection-table {
+  min-width: 860px;
+  table-layout: fixed;
 }
 
 .cell-center {
