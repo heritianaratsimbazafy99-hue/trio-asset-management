@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import { supabase } from "../../lib/supabaseClient";
+import { emitNotificationRefresh } from "../../lib/notificationRefresh";
 
 export default function NewMaintenance() {
   const router = useRouter();
@@ -68,6 +69,7 @@ export default function NewMaintenance() {
       return;
     }
 
+    emitNotificationRefresh("maintenance-ticket-created");
     router.push(
       `/assets/${selectedAssetId}?flash=${encodeURIComponent(
         "Ticket maintenance créé. Statut: en attente de validation."

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import supabase from "../../lib/supabaseClient";
 import Layout from "../../components/Layout";
+import { emitNotificationRefresh } from "../../lib/notificationRefresh";
 
 export default function NewIncident() {
   const router = useRouter();
@@ -68,6 +69,7 @@ export default function NewIncident() {
       return;
     }
 
+    emitNotificationRefresh("incident-created");
     router.push(`/assets/${selectedAssetId}`);
   }
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "../lib/supabaseClient";
+import { getNotificationRefreshEventNames } from "../lib/notificationRefresh";
 
 function AlarmIcon() {
   return (
@@ -20,28 +21,47 @@ function AlarmIcon() {
 export default function NotificationAlarm() {
   const router = useRouter();
   const [count, setCount] = useState(0);
+  const lastRefreshAtRef = useRef(0);
 
   useEffect(() => {
     let alive = true;
+    const { sidebar } = getNotificationRefreshEventNames();
 
-    async function refreshUnreadCount() {
+    async function refreshUnreadCount(force = false) {
+      const now = Date.now();
+      if (!force && now - lastRefreshAtRef.current < 1200) return;
+      lastRefreshAtRef.current = now;
       const { data, error } = await supabase.rpc("get_unread_notifications_count");
       if (!alive || error) return;
       setCount(Number(data || 0));
     }
 
-    refreshUnreadCount();
-    const timer = window.setInterval(refreshUnreadCount, 60000);
+    refreshUnreadCount(true);
+    const timer = window.setInterval(refreshUnreadCount, 120000);
 
     function handleRefresh() {
-      refreshUnreadCount();
+      refreshUnreadCount(true);
     }
 
-    window.addEventListener("trio-sidebar-refresh", handleRefresh);
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refreshUnreadCount(true);
+      }
+    }
+
+    function handleWindowFocus() {
+      refreshUnreadCount(true);
+    }
+
+    window.addEventListener(sidebar, handleRefresh);
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       alive = false;
       window.clearInterval(timer);
-      window.removeEventListener("trio-sidebar-refresh", handleRefresh);
+      window.removeEventListener(sidebar, handleRefresh);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [router.pathname]);
 

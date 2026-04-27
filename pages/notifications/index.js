@@ -15,6 +15,10 @@ import {
   getNotificationStatusLabel,
   getNotificationTypeLabel,
 } from "../../lib/notifications";
+import {
+  emitSidebarNotificationRefresh,
+  getNotificationRefreshEventNames,
+} from "../../lib/notificationRefresh";
 
 const STATUS_FILTERS = ["UNREAD", "READ", "ALL"];
 
@@ -26,11 +30,6 @@ function formatDate(value) {
 function normalizeBody(value) {
   if (!value) return "-";
   return String(value);
-}
-
-function emitSidebarRefresh() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event("trio-sidebar-refresh"));
 }
 
 function normalizePreferencesRow(row) {
@@ -65,6 +64,34 @@ export default function NotificationsPage() {
     fetchPreferences();
   }, []);
 
+  useEffect(() => {
+    const { notifications } = getNotificationRefreshEventNames();
+
+    function handleRefresh() {
+      fetchNotifications();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        fetchNotifications();
+      }
+    }
+
+    function handleWindowFocus() {
+      fetchNotifications();
+    }
+
+    emitSidebarNotificationRefresh("notifications-page-open");
+    window.addEventListener(notifications, handleRefresh);
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener(notifications, handleRefresh);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [statusFilter]);
+
   async function fetchNotifications() {
     setLoading(true);
     setError("");
@@ -93,7 +120,7 @@ export default function NotificationsPage() {
     const nextActorsMap = await fetchUserDirectoryMapByIds(actorIds);
     setActorsMap(nextActorsMap);
     setLoading(false);
-    emitSidebarRefresh();
+    emitSidebarNotificationRefresh("notifications-loaded");
   }
 
   async function fetchPreferences() {
@@ -205,7 +232,7 @@ export default function NotificationsPage() {
       }
       setMessage("Préférences de notifications mises à jour.");
       await fetchNotifications();
-      emitSidebarRefresh();
+      emitSidebarNotificationRefresh("notifications-preferences-saved");
     }
 
     setPreferencesSaving(false);

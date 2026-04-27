@@ -43,6 +43,7 @@ import {
   isVehicleCategory,
   vehicleInfoValue,
 } from "../../lib/vehicleInfo";
+import { emitNotificationRefresh } from "../../lib/notificationRefresh";
 
 function safeText(value) {
   return String(value ?? "-")
@@ -460,6 +461,7 @@ export default function AssetDetailPage() {
       setStatusMessage(`Erreur création demande rebus: ${error.message}`);
     } else {
       setStatusMessage("Demande de passage en rebus envoyée pour validation.");
+      emitNotificationRefresh("asset-rebus-requested");
     }
 
     setStatusBusy(false);
@@ -536,6 +538,11 @@ export default function AssetDetailPage() {
         : "Demande de changement de valeur d'achat envoyée au CEO."
     );
 
+    emitNotificationRefresh(
+      canDirectlyManagePurchaseValue
+        ? "asset-purchase-value-updated"
+        : "asset-purchase-value-requested"
+    );
     await fetchAll(asset.id);
     setStatusBusy(false);
   }
