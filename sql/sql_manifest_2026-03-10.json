@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-12",
+  "updatedAt": "2026-04-27",
   "sourceOfTruth": {
     "runbook": "docs/SQL_RUNBOOK_2026-03-10.md",
     "catalog": "docs/SQL_CATALOG_2026-03-10.md"
@@ -98,6 +98,10 @@
       {
         "file": "sql/hotfix_2026_03_12_cross_company_operational_leadership.sql",
         "useWhen": "A executer sur un environnement existant si CEO, DAF et RESPONSABLE_MAINTENANCE doivent agir cross-societes sur maintenance et incidents, avec approbation workflow reservee a CEO/DAF et creation maintenance/rebus ouverte au RESPONSABLE_MAINTENANCE."
+      },
+      {
+        "file": "sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql",
+        "useWhen": "A executer sur un environnement existant si les tickets maintenance doivent suivre deux validations sequentielles: conformite DAF puis accord CEO pour demarrer la maintenance."
       }
     ]
   },

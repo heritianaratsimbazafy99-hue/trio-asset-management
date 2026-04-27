@@ -6,11 +6,15 @@ import { getCurrentUserProfile } from "../../lib/accessControl";
 import { fetchUserDirectoryMapByIds, getUserLabelById } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
 import {
+  getWorkflowApproveActionLabel,
   getWorkflowPayloadSummary,
+  getWorkflowRejectActionLabel,
   getWorkflowRequestTypeLabel,
+  getWorkflowStepLabel,
   getWorkflowStatusClassName,
   getWorkflowStatusLabel,
 } from "../../lib/workflowRequests";
+import { emitNotificationRefresh } from "../../lib/notificationRefresh";
 
 const STATUS_FILTERS = ["PENDING", "APPROVED", "REJECTED", "FAILED", "ALL"];
 
@@ -178,14 +182,15 @@ export default function ApprovalsPage() {
   }
 
   async function approveRequest(request) {
-    const note = window.prompt("Commentaire d'approbation (optionnel)", "");
+    const actionLabel = getWorkflowApproveActionLabel(request, userRole);
+    const note = window.prompt(`${actionLabel} - commentaire optionnel`, "");
     if (note === null) return;
 
     setActionLoading(true);
     setError("");
     setMessage("");
 
-    const { error: rpcError } = await supabase.rpc("approve_workflow_request", {
+    const { data, error: rpcError } = await supabase.rpc("approve_workflow_request", {
       p_request_id: request.id,
       p_note: note.trim() || null,
     });
@@ -193,7 +198,19 @@ export default function ApprovalsPage() {
     if (rpcError) {
       setError(rpcError.message);
     } else {
-      setMessage("Validation enregistrée.");
+      const result = Array.isArray(data) ? data[0] : null;
+      const requestType = String(request?.request_type || "").toUpperCase();
+      const resultStatus = String(result?.status || "").toUpperCase();
+      const resultApprovalCount = Number(result?.approval_count || 0);
+
+      if (requestType === "MAINTENANCE_START" && resultStatus === "PENDING" && resultApprovalCount === 1) {
+        setMessage("Conformité DAF enregistrée. En attente de l'accord CEO pour démarrer.");
+      } else if (requestType === "MAINTENANCE_START" && resultStatus === "APPROVED") {
+        setMessage("Accord CEO enregistré. La maintenance peut démarrer.");
+      } else {
+        setMessage("Validation enregistrée.");
+      }
+      emitNotificationRefresh("workflow-approved");
       await fetchRequests();
     }
 
@@ -201,7 +218,8 @@ export default function ApprovalsPage() {
   }
 
   async function rejectRequest(request) {
-    const note = window.prompt("Motif de rejet (obligatoire)", "");
+    const actionLabel = getWorkflowRejectActionLabel(request, userRole);
+    const note = window.prompt(`${actionLabel} - motif obligatoire`, "");
     if (note === null) return;
 
     if (!note.trim()) {
@@ -221,7 +239,13 @@ export default function ApprovalsPage() {
     if (rpcError) {
       setError(rpcError.message);
     } else {
-      setMessage("Demande rejetée.");
+      const requestType = String(request?.request_type || "").toUpperCase();
+      setMessage(
+        requestType === "MAINTENANCE_START"
+          ? "Ticket maintenance rejeté."
+          : "Demande rejetée."
+      );
+      emitNotificationRefresh("workflow-rejected");
       await fetchRequests();
     }
 
@@ -289,14 +313,14 @@ export default function ApprovalsPage() {
                     disabled={actionLoading}
                     onClick={() => approveRequest(selectedRequest)}
                   >
-                    Valider
+                    {getWorkflowApproveActionLabel(selectedRequest, userRole)}
                   </button>
                   <button
                     className="btn-secondary"
                     disabled={actionLoading}
                     onClick={() => rejectRequest(selectedRequest)}
                   >
-                    Rejeter
+                    {getWorkflowRejectActionLabel(selectedRequest, userRole)}
                   </button>
                 </>
               )}
@@ -317,6 +341,12 @@ export default function ApprovalsPage() {
                 <span className={getWorkflowStatusClassName(selectedRequest.status)}>
                   {getWorkflowStatusLabel(selectedRequest.status)}
                 </span>
+              </div>
+            </div>
+            <div className="card" style={{ margin: 0 }}>
+              <strong>Étape</strong>
+              <div style={{ marginTop: 8 }}>
+                {getWorkflowStepLabel(selectedRequest)}
               </div>
             </div>
             <div className="card" style={{ margin: 0 }}>
@@ -398,6 +428,7 @@ export default function ApprovalsPage() {
                   const assetCodeSuffix = request.asset_code ? ` (${request.asset_code})` : "";
                   const canOpenAsset = Boolean(request.asset_id);
                   const progress = `${request.approval_count || 0} / ${request.required_approvals || 0}`;
+                  const stepLabel = getWorkflowStepLabel(request);
 
                   return (
                     <tr key={request.id}>
@@ -415,7 +446,12 @@ export default function ApprovalsPage() {
                       </td>
                       <td>{request.company_name || "-"}</td>
                       <td>{getUserLabelById(usersMap, request.requested_by)}</td>
-                      <td>{progress}</td>
+                      <td>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <span>{progress}</span>
+                          <small style={{ color: "#5f6f83" }}>{stepLabel}</small>
+                        </div>
+                      </td>
                       <td>
                         <div style={{ display: "grid", gap: 6 }}>
                           <button
@@ -463,14 +499,14 @@ export default function ApprovalsPage() {
                               disabled={actionLoading}
                               onClick={() => approveRequest(request)}
                             >
-                              Valider
+                              {getWorkflowApproveActionLabel(request, userRole)}
                             </button>
                             <button
                               className="btn-secondary"
                               disabled={actionLoading}
                               onClick={() => rejectRequest(request)}
                             >
-                              Rejeter
+                              {getWorkflowRejectActionLabel(request, userRole)}
                             </button>
                           </div>
                         ) : request.already_decided ? (

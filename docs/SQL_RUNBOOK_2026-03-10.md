@@ -1,6 +1,6 @@
 # Runbook SQL Trio Asset Management
 
-Date de mise à jour: 2026-03-12
+Date de mise à jour: 2026-04-27
 
 Ce document définit l'ordre SQL de référence pour:
 
@@ -72,6 +72,7 @@ Patch ciblé hors chemin standard:
 - `sql/hotfix_2026_03_11_workflow_maintenance_and_governance_audit.sql`
 - `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`
 - `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`
+- `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql`
 
 Autres scripts historiques classés comme supersédés dans le catalogue:
 
@@ -97,6 +98,11 @@ Quand utiliser `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`:
 
 - si CEO, DAF ou `RESPONSABLE_MAINTENANCE` doivent pouvoir cloturer incidents et maintenances sur toutes les societes
 - si les tickets maintenance et rebus doivent rester approuvables par CEO/DAF, tout en laissant le `RESPONSABLE_MAINTENANCE` creer ces demandes sur l'ensemble des structures
+
+Quand utiliser `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql`:
+
+- si les tickets maintenance doivent passer par deux etapes obligatoires: conformite DAF, puis accord CEO pour demarrer la maintenance
+- si le CEO ne doit plus pouvoir demarrer une maintenance tant que le DAF n'a pas valide la conformite du ticket
 
 ## 3. Rattrapage prod simplifié
 
