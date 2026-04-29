@@ -106,6 +106,10 @@
       {
         "file": "sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.sql",
         "useWhen": "A executer sur un environnement existant si un actif doit revenir automatiquement a EN_SERVICE apres cloture maintenance, sauf incident ouvert ou autre maintenance active."
+      },
+      {
+        "file": "sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql",
+        "useWhen": "A executer sur un environnement existant si un actif doit aussi etre recalcule automatiquement apres ouverture, resolution ou deplacement d'un incident."
       }
     ]
   },

@@ -74,6 +74,7 @@ Patch ciblé hors chemin standard:
 - `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql`
 - `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql`
 - `sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.sql`
+- `sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql`
 
 Autres scripts historiques classés comme supersédés dans le catalogue:
 
@@ -109,6 +110,11 @@ Quand utiliser `sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.
 
 - si un actif reste en `EN_MAINTENANCE` apres cloture d'une maintenance et oblige l'utilisateur a cliquer manuellement sur `Statut auto selon incidents/maintenance`
 - si le statut actif doit revenir automatiquement a `EN_SERVICE` quand il n'existe plus d'incident ouvert ni de maintenance active
+
+Quand utiliser `sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql`:
+
+- si une maintenance est deja terminee mais que l'actif reste en `EN_MAINTENANCE` jusqu'a la cloture d'un incident ouvert
+- si le statut actif doit aussi etre recalcule automatiquement lors de l'ouverture, resolution ou deplacement d'un incident
 
 ## 3. Rattrapage prod simplifié
 

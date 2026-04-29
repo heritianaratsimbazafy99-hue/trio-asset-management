@@ -67,6 +67,7 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
 | `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql` | Si CEO, DAF et `RESPONSABLE_MAINTENANCE` doivent agir cross-societes sur maintenance et incidents, avec approbation workflow reservee au CEO/DAF et creation maintenance/rebus ouverte au `RESPONSABLE_MAINTENANCE` |
 | `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql` | Si les tickets maintenance doivent suivre deux validations sequentielles: conformite DAF puis accord CEO pour demarrer la maintenance |
 | `sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.sql` | Si le statut d'un actif doit etre recalcule automatiquement apres cloture maintenance pour revenir a `EN_SERVICE` quand plus aucun incident ou maintenance active ne le bloque |
+| `sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql` | Si le statut d'un actif doit aussi etre recalcule automatiquement apres ouverture, resolution ou deplacement d'un incident |
 
 ## 4. Regles d'exploitation
 
