@@ -1,6 +1,6 @@
 # Contexte de reprise Trio Asset Management
 
-Date de mise à jour: 2026-04-27
+Date de mise à jour: 2026-04-29
 
 ## Etat fonctionnel couvert
 
@@ -33,6 +33,10 @@ Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
 - Les tickets maintenance en attente suivent deux etapes sequentielles:
   - le DAF valide ou refuse la conformite du ticket
   - le CEO donne ou refuse ensuite l'accord pour demarrer la maintenance
+- Quand une maintenance est cloturee, le statut de l'actif lie est recalcule automatiquement:
+  - `EN_SERVICE` si aucun incident ouvert ni maintenance active ne reste
+  - `EN_MAINTENANCE` si un incident ouvert ou une autre maintenance active existe encore
+  - `REBUS` est conserve
 - Le signalement d'un actif irréparable peut être initié par CEO ou RESPONSABLE_MAINTENANCE
 - Les corrections de santé des données respectent les rôles suivants:
   - valeur d'achat manquante: CEO uniquement
@@ -83,6 +87,7 @@ Les lots 1 à 14 sont implémentés côté code ou documentation d'exploitation:
   - `sql/hotfix_2026_03_11_notifications_read_only_transaction.sql`
   - `sql/hotfix_2026_03_12_cross_company_operational_leadership.sql` pour l'alignement cross-societes CEO/DAF/Resp. maintenance avec approbation workflow conservee sur CEO/DAF
   - `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql` pour rendre obligatoire le flux maintenance DAF conformite puis CEO accord de demarrage
+  - `sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.sql` pour recalculer automatiquement le statut actif apres cloture maintenance
 
 ## SQL de référence
 
