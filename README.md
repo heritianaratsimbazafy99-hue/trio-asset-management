@@ -94,7 +94,7 @@ Checklist de vérification rôle/RLS/dashboard:
 Note d'exploitation:
 
 - le dispatch email passe par `/api/notifications/email-dispatch`
-- sur Vercel Pro, `vercel.json` déclare un cron toutes les 5 minutes
+- sur Vercel Pro, `vercel.json` déclare un cron toutes les minutes
 - désactiver le cron équivalent dans `cron-job.org` après déploiement production
 - sur Vercel Hobby, retirer les `crons` de `vercel.json` et utiliser un scheduler HTTP externe
 

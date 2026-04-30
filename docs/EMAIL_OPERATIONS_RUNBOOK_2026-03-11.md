@@ -54,7 +54,7 @@ Authentification acceptée:
 Règle d'exploitation:
 
 - le projet utilise Vercel Pro, donc le cron est déclaré dans `vercel.json`
-- cadence active: toutes les 5 minutes via `*/5 * * * *`
+- cadence active: toutes les minutes via `* * * * *`
 - Vercel Cron appelle uniquement le déploiement production et envoie `Authorization: Bearer <CRON_SECRET>` si `CRON_SECRET` est configuré côté Vercel
 - après activation Vercel Cron, désactiver le cron équivalent dans `cron-job.org` pour éviter un double déclenchement
 - si le projet repasse sur Vercel Hobby, retirer les `crons` de `vercel.json` et revenir à un scheduler HTTP externe
