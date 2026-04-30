@@ -14,31 +14,14 @@ import {
   getUserLabelById,
 } from "../../lib/userDirectory";
 import { formatMGA } from "../../lib/currency";
-
-function getMaintenanceDisplayStatus(item) {
-  const approvalStatus = String(item?.approval_status || "").toUpperCase();
-  const status = String(item?.status || "").toUpperCase();
-
-  if (approvalStatus === "REJETEE") return "Rejetée";
-  if (approvalStatus === "EN_ATTENTE_VALIDATION" || status === "EN_ATTENTE_VALIDATION") {
-    return "En attente de validation";
-  }
-  if (item?.is_completed || status === "TERMINEE") return "Terminée";
-  if (status === "EN_COURS") return "En cours";
-  return "Planifiée";
-}
-
-function getMaintenanceStatusClassName(item) {
-  const approvalStatus = String(item?.approval_status || "").toUpperCase();
-  const status = String(item?.status || "").toUpperCase();
-
-  if (approvalStatus === "REJETEE") return "badge-danger";
-  if (approvalStatus === "EN_ATTENTE_VALIDATION" || status === "EN_ATTENTE_VALIDATION") {
-    return "badge-warning";
-  }
-  if (item?.is_completed || status === "TERMINEE") return "badge-success";
-  return "badge-warning";
-}
+import {
+  getMaintenanceStatusClassName,
+  getMaintenanceStatusLabel,
+  isIncidentOpen,
+  isMaintenanceBlockingAsset,
+  normalizeOperationStatus,
+} from "../../lib/operationStatus";
+import { emitNotificationRefresh } from "../../lib/notificationRefresh";
 
 export default function MaintenancePage() {
   const router = useRouter();
@@ -47,15 +30,26 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [usersMap, setUsersMap] = useState({});
+  const [closeDraft, setCloseDraft] = useState(null);
+  const [selectedIncidentIds, setSelectedIncidentIds] = useState([]);
 
   const canCloseMaintenance = hasOneRole(userRole, OPERATIONAL_LEADERSHIP_ROLES);
+
+  function canMarkMaintenanceCompleted(item) {
+    return (
+      isMaintenanceBlockingAsset(item) &&
+      normalizeOperationStatus(item?.approval_status) !== "EN_ATTENTE_VALIDATION" &&
+      normalizeOperationStatus(item?.status) !== "EN_ATTENTE_VALIDATION"
+    );
+  }
 
   async function fetchData() {
     const [{ data }, { data: replacementData }, { profile }] = await Promise.all([
       supabase
       .from("maintenance")
-      .select("*, assets(name)")
+      .select("*, assets(name,status)")
       .order("created_at", { ascending: false }),
       supabase
         .from("assets")
@@ -78,7 +72,7 @@ export default function MaintenancePage() {
     fetchData();
   }, []);
 
-  async function markCompleted(id) {
+  async function prepareMaintenanceClosure(item) {
     if (!canCloseMaintenance) {
       setError("Seuls le CEO, le DAF et les responsables maintenance peuvent cloturer.");
       return;
@@ -86,9 +80,60 @@ export default function MaintenancePage() {
 
     setLoading(true);
     setError("");
+    setMessage("");
+
+    const { data: openIncidents, error: incidentError } = await supabase
+      .from("incidents")
+      .select("id,title,description,status,created_at")
+      .eq("asset_id", item.asset_id)
+      .order("created_at", { ascending: false });
+
+    if (incidentError) {
+      setError(incidentError.message);
+      setLoading(false);
+      return;
+    }
+
+    const blockingIncidents = (openIncidents || []).filter(isIncidentOpen);
+    if (blockingIncidents.length > 0) {
+      setCloseDraft({ maintenance: item, incidents: blockingIncidents });
+      setSelectedIncidentIds([]);
+      setLoading(false);
+      return;
+    }
+
+    await completeMaintenance(item, []);
+  }
+
+  async function completeMaintenance(item, incidentIdsToResolve = []) {
+    if (!canCloseMaintenance) {
+      setError("Seuls le CEO, le DAF et les responsables maintenance peuvent cloturer.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setMessage("");
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    if (incidentIdsToResolve.length > 0) {
+      const { error: incidentUpdateError } = await supabase
+        .from("incidents")
+        .update({
+          status: "RESOLU",
+          resolved_at: new Date().toISOString(),
+          resolved_by: user?.id || null,
+        })
+        .in("id", incidentIdsToResolve);
+
+      if (incidentUpdateError) {
+        setError(incidentUpdateError.message);
+        setLoading(false);
+        return;
+      }
+    }
 
     const { error: updateError } = await supabase
       .from("maintenance")
@@ -98,14 +143,30 @@ export default function MaintenancePage() {
         completed_at: new Date().toISOString(),
         completed_by: user?.id || null,
       })
-      .eq("id", id);
+      .eq("id", item.id);
 
     if (updateError) {
       setError(updateError.message);
+    } else {
+      const incidentText = incidentIdsToResolve.length
+        ? ` ${incidentIdsToResolve.length} incident(s) lié(s) clôturé(s).`
+        : "";
+      setMessage(`Maintenance clôturée.${incidentText} Le statut actif sera recalculé automatiquement.`);
+      emitNotificationRefresh("maintenance-closed");
+      setCloseDraft(null);
+      setSelectedIncidentIds([]);
     }
 
     await fetchData();
     setLoading(false);
+  }
+
+  function toggleIncidentSelection(incidentId) {
+    setSelectedIncidentIds((current) =>
+      current.includes(incidentId)
+        ? current.filter((item) => item !== incidentId)
+        : [...current, incidentId]
+    );
   }
 
   return (
@@ -113,6 +174,59 @@ export default function MaintenancePage() {
       <h1>Maintenance</h1>
       <p style={{ marginBottom: 12 }}>Rôle connecté: {userRole || "-"}</p>
       {error && <div className="alert-error">{error}</div>}
+      {message && <div className="alert-success">{message}</div>}
+
+      {closeDraft && (
+        <div className="operation-close-panel">
+          <h3>Clôture maintenance avec incidents liés</h3>
+          <p>
+            Des incidents restent ouverts sur cet actif. Sélectionne uniquement ceux qui sont
+            réellement résolus par cette maintenance avant de clôturer.
+          </p>
+          <div className="operation-check-list">
+            {closeDraft.incidents.map((incident) => (
+              <label className="operation-check-item" key={incident.id}>
+                <input
+                  type="checkbox"
+                  checked={selectedIncidentIds.includes(incident.id)}
+                  onChange={() => toggleIncidentSelection(incident.id)}
+                />
+                <span>
+                  <strong>{incident.title || incident.description || "Incident"}</strong>
+                  <small style={{ display: "block", color: "#5f6f83", marginTop: 4 }}>
+                    Signalé le{" "}
+                    {incident.created_at
+                      ? new Date(incident.created_at).toLocaleDateString("fr-FR")
+                      : "-"}
+                  </small>
+                </span>
+              </label>
+            ))}
+          </div>
+          <div className="operations-action-row">
+            <button
+              className="btn-success"
+              type="button"
+              disabled={loading}
+              onClick={() => completeMaintenance(closeDraft.maintenance, selectedIncidentIds)}
+            >
+              Clôturer maintenance
+              {selectedIncidentIds.length ? ` + ${selectedIncidentIds.length} incident(s)` : ""}
+            </button>
+            <button
+              className="btn-secondary"
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setCloseDraft(null);
+                setSelectedIncidentIds([]);
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="maintenance-table-wrap">
@@ -171,31 +285,22 @@ export default function MaintenancePage() {
 
                   <td className="cell-center cell-nowrap">
                     <span className={getMaintenanceStatusClassName(m)}>
-                      {getMaintenanceDisplayStatus(m)}
+                      {getMaintenanceStatusLabel(m)}
                     </span>
                   </td>
 
                   <td>
-                    {!m.is_completed &&
-                      String(m.approval_status || "").toUpperCase() !== "REJETEE" &&
-                      String(m.status || "").toUpperCase() !== "EN_ATTENTE_VALIDATION" &&
-                      canCloseMaintenance && (
+                    {canMarkMaintenanceCompleted(m) && canCloseMaintenance && (
                       <button
                         className="btn-success"
                         disabled={loading}
-                        onClick={() => markCompleted(m.id)}
+                        onClick={() => prepareMaintenanceClosure(m)}
                       >
                         Marquer terminée
                       </button>
                     )}
-                    {!m.is_completed &&
-                      String(m.approval_status || "").toUpperCase() !== "REJETEE" &&
-                      String(m.status || "").toUpperCase() !== "EN_ATTENTE_VALIDATION" &&
-                      !canCloseMaintenance && <span>-</span>}
-                    {(String(m.approval_status || "").toUpperCase() === "REJETEE" ||
-                      String(m.status || "").toUpperCase() === "EN_ATTENTE_VALIDATION") && (
-                      <span>-</span>
-                    )}
+                    {canMarkMaintenanceCompleted(m) && !canCloseMaintenance && <span>-</span>}
+                    {!canMarkMaintenanceCompleted(m) && <span>-</span>}
                   </td>
                 </tr>
               ))}

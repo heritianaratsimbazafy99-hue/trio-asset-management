@@ -8,8 +8,11 @@ export default function StatusBadge({ status }) {
     EN_MAINTENANCE: "maintenance",
     REBUS: "rebus",
     OUVERT: "ouvert",
+    RESOLU: "resolu",
     EN_COURS: "en-cours",
     EN_ATTENTE_VALIDATION: "pending",
+    TERMINEE: "resolu",
+    REJETEE: "hs",
   };
 
   const cls = map[s] || "";

@@ -31,6 +31,8 @@ import {
   canFixDataHealthIssue,
   getDataHealthIssueConfig,
 } from "../../lib/dataHealth";
+import { emitNotificationRefresh } from "../../lib/notificationRefresh";
+import { isIncidentOpen } from "../../lib/operationStatus";
 
 const PERIOD_OPTIONS = [
   { value: "30D", label: "30 jours" },
@@ -507,16 +509,39 @@ export default function Dashboard() {
     if (closeError) {
       setError(closeError.message);
     } else {
+      emitNotificationRefresh("incident-closed-dashboard");
       await fetchSummary();
     }
 
     setActionBusy(false);
   }
 
-  async function closeMaintenance(id) {
+  async function closeMaintenance(item) {
     if (!canCloseOps) return;
     setActionBusy(true);
     setError("");
+
+    const { data: openIncidentRows, error: incidentError } = await supabase
+      .from("incidents")
+      .select("id,status")
+      .eq("asset_id", item.asset_id);
+
+    if (incidentError) {
+      setError(incidentError.message);
+      setActionBusy(false);
+      return;
+    }
+
+    const openIncidentCount = (openIncidentRows || []).filter(isIncidentOpen).length;
+    if (openIncidentCount > 0) {
+      const confirmed = window.confirm(
+        `${openIncidentCount} incident(s) restent ouverts sur cet actif. Clôturer la maintenance maintenant ne remettra pas l'actif en service. Continuer ?`
+      );
+      if (!confirmed) {
+        setActionBusy(false);
+        return;
+      }
+    }
 
     const {
       data: { user },
@@ -530,11 +555,12 @@ export default function Dashboard() {
         completed_at: new Date().toISOString(),
         completed_by: user?.id || null,
       })
-      .eq("id", id);
+      .eq("id", item.id);
 
     if (closeError) {
       setError(closeError.message);
     } else {
+      emitNotificationRefresh("maintenance-closed-dashboard");
       await fetchSummary();
     }
 
@@ -1329,7 +1355,7 @@ export default function Dashboard() {
                         <button
                           className="btn-success"
                           disabled={actionBusy}
-                          onClick={() => closeMaintenance(item.id)}
+                          onClick={() => closeMaintenance(item)}
                         >
                           Clôturer
                         </button>

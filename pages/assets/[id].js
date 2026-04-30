@@ -31,6 +31,13 @@ import { formatMGA } from "../../lib/currency";
 import { getAssetCategoryLabel } from "../../lib/assetCategories";
 import { getAssetConditionLabel } from "../../lib/assetConditions";
 import {
+  getBlockingOperationsSummary,
+  getDerivedAssetStatus,
+  getIncidentStatusLabel,
+  getMaintenanceDisplayStatus,
+  getMaintenanceStatusLabel,
+} from "../../lib/operationStatus";
+import {
   canDirectlyChangePurchaseValue,
   canRequestAssetRebus,
   canRequestPurchaseValueChange,
@@ -71,19 +78,6 @@ function getHistoryAssignmentLabel(row, userIdField, nameField, usersMap) {
   if (row?.[nameField]) return row[nameField];
   if (fromUser && fromUser !== "-") return fromUser;
   return "-";
-}
-
-function getMaintenanceDisplayStatus(item) {
-  const approvalStatus = String(item?.approval_status || "").toUpperCase();
-  const status = String(item?.status || "").toUpperCase();
-
-  if (approvalStatus === "REJETEE") return "REJETEE";
-  if (approvalStatus === "EN_ATTENTE_VALIDATION" || status === "EN_ATTENTE_VALIDATION") {
-    return "EN_ATTENTE_VALIDATION";
-  }
-  if (item?.is_completed || status === "TERMINEE") return "TERMINEE";
-  if (status === "EN_COURS") return "EN_COURS";
-  return status || "PLANIFIEE";
 }
 
 const INSURANCE_TYPE_LABEL_BY_VALUE = INSURANCE_TYPE_OPTIONS.reduce((acc, item) => {
@@ -322,6 +316,19 @@ export default function AssetDetailPage() {
       return d2 - d1;
     });
   }, [incidents, maintenance, usersMap]);
+  const operationSummary = useMemo(
+    () => getBlockingOperationsSummary({ incidents, maintenance }),
+    [incidents, maintenance]
+  );
+  const derivedAssetStatus = useMemo(
+    () => getDerivedAssetStatus({ asset, incidents, maintenance }),
+    [asset, incidents, maintenance]
+  );
+  const currentAssetStatus = String(asset?.status || "").toUpperCase();
+  const hasAssetStatusMismatch =
+    Boolean(asset) &&
+    currentAssetStatus !== derivedAssetStatus &&
+    currentAssetStatus !== "REBUS";
 
   async function handleAttachmentUpload(event) {
     setAttachmentError("");
@@ -360,17 +367,7 @@ export default function AssetDetailPage() {
     setStatusBusy(true);
     setStatusMessage("");
 
-    const hasOpenIncident = incidents.some((item) => item.status !== "RESOLU");
-    const hasPendingMaintenance = maintenance.some(
-      (item) =>
-        !item.is_completed &&
-        item.status !== "TERMINEE" &&
-        String(item.approval_status || "").toUpperCase() !== "REJETEE" &&
-        String(item.approval_status || "").toUpperCase() !== "EN_ATTENTE_VALIDATION"
-    );
-    const nextStatus = hasOpenIncident || hasPendingMaintenance
-      ? "EN_MAINTENANCE"
-      : "EN_SERVICE";
+    const nextStatus = getDerivedAssetStatus({ asset, incidents, maintenance });
 
     const { error } = await supabase
       .from("assets")
@@ -751,6 +748,41 @@ export default function AssetDetailPage() {
           </div>
         )}
 
+        <div style={{ marginTop: 16 }}>
+          <h3>Workflow incident & maintenance</h3>
+          <div className="operations-overview-grid">
+            <div className="operations-overview-item">
+              <span>Incidents ouverts</span>
+              <strong>{operationSummary.openIncidents.length}</strong>
+              <small>Doivent être résolus avant retour en service.</small>
+            </div>
+            <div className="operations-overview-item">
+              <span>Maintenance en attente</span>
+              <strong>{operationSummary.pendingMaintenance.length}</strong>
+              <small>Ticket DAF/CEO non terminé.</small>
+            </div>
+            <div className="operations-overview-item">
+              <span>Maintenance active</span>
+              <strong>{operationSummary.activeMaintenance.length}</strong>
+              <small>En cours ou planifiée hors rejet.</small>
+            </div>
+            <div className="operations-overview-item">
+              <span>Statut attendu</span>
+              <strong>
+                <StatusBadge status={derivedAssetStatus} />
+              </strong>
+              <small>Calculé depuis les opérations ouvertes.</small>
+            </div>
+          </div>
+          {hasAssetStatusMismatch && (
+            <div className="alert-warning" style={{ marginTop: 12 }}>
+              Le statut stocké ({currentAssetStatus || "-"}) ne correspond pas au workflow
+              opérationnel ({derivedAssetStatus}). Utilise le recalcul automatique ou exécute
+              le hotfix SQL de recalcul côté Supabase.
+            </div>
+          )}
+        </div>
+
         {canManageAssignment ? (
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1.2fr 1fr auto", gap: 10 }}>
             <input
@@ -842,7 +874,7 @@ export default function AssetDetailPage() {
             disabled={statusBusy}
             onClick={applyAutomaticAssetStatus}
           >
-            {statusBusy ? "Mise à jour..." : "Statut auto selon incidents/maintenance"}
+            {statusBusy ? "Mise à jour..." : "Réconcilier statut actif"}
           </button>
         </div>
       </div>
@@ -1063,7 +1095,12 @@ export default function AssetDetailPage() {
               {incidents.map((item) => (
                 <tr key={`incident-history-${item.id}`}>
                   <td>{item.title || item.description || "-"}</td>
-                  <td>{item.status || "-"}</td>
+                  <td>
+                    <StatusBadge status={item.status} />{" "}
+                    <span style={{ color: "#5f6f83", fontSize: 13 }}>
+                      {getIncidentStatusLabel(item.status)}
+                    </span>
+                  </td>
                   <td>{getUserLabelById(usersMap, item.reported_by)}</td>
                   <td>{item.created_at ? new Date(item.created_at).toLocaleDateString("fr-FR") : "-"}</td>
                   <td>{getUserLabelById(usersMap, item.resolved_by)}</td>
@@ -1097,7 +1134,12 @@ export default function AssetDetailPage() {
                 <tr key={`maintenance-history-${item.id}`}>
                   <td>{item.title || item.description || "-"}</td>
                   <td>{formatMGA(item.cost)}</td>
-                  <td>{getMaintenanceDisplayStatus(item)}</td>
+                  <td>
+                    <StatusBadge status={getMaintenanceDisplayStatus(item)} />{" "}
+                    <span style={{ color: "#5f6f83", fontSize: 13 }}>
+                      {getMaintenanceStatusLabel(item)}
+                    </span>
+                  </td>
                   <td>{getUserLabelById(usersMap, item.reported_by)}</td>
                   <td>{item.created_at ? new Date(item.created_at).toLocaleDateString("fr-FR") : "-"}</td>
                   <td>{getUserLabelById(usersMap, item.completed_by)}</td>

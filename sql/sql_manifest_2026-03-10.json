@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-29",
+  "updatedAt": "2026-04-30",
   "sourceOfTruth": {
     "runbook": "docs/SQL_RUNBOOK_2026-03-10.md",
     "catalog": "docs/SQL_CATALOG_2026-03-10.md"
@@ -110,6 +110,14 @@
       {
         "file": "sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql",
         "useWhen": "A executer sur un environnement existant si un actif doit aussi etre recalcule automatiquement apres ouverture, resolution ou deplacement d'un incident."
+      },
+      {
+        "file": "sql/hotfix_2026_04_29_pending_maintenance_blocks_asset_status.sql",
+        "useWhen": "A executer sur un environnement existant si une maintenance en attente de validation doit bloquer le retour automatique de l'actif en EN_SERVICE."
+      },
+      {
+        "file": "sql/hotfix_2026_04_30_workflow_status_ambiguous_fix.sql",
+        "useWhen": "A executer sur un environnement existant si l'approbation finale CEO d'une maintenance echoue avec column reference \"status\" is ambiguous, puis reparer les demandes MAINTENANCE_START deja tombees en FAILED avec cette erreur."
       }
     ]
   },

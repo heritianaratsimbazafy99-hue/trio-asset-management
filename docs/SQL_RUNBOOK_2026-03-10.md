@@ -1,6 +1,6 @@
 # Runbook SQL Trio Asset Management
 
-Date de mise à jour: 2026-04-29
+Date de mise à jour: 2026-04-30
 
 Ce document définit l'ordre SQL de référence pour:
 
@@ -75,6 +75,8 @@ Patch ciblé hors chemin standard:
 - `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql`
 - `sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.sql`
 - `sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql`
+- `sql/hotfix_2026_04_29_pending_maintenance_blocks_asset_status.sql`
+- `sql/hotfix_2026_04_30_workflow_status_ambiguous_fix.sql`
 
 Autres scripts historiques classés comme supersédés dans le catalogue:
 
@@ -115,6 +117,17 @@ Quand utiliser `sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql
 
 - si une maintenance est deja terminee mais que l'actif reste en `EN_MAINTENANCE` jusqu'a la cloture d'un incident ouvert
 - si le statut actif doit aussi etre recalcule automatiquement lors de l'ouverture, resolution ou deplacement d'un incident
+
+Quand utiliser `sql/hotfix_2026_04_29_pending_maintenance_blocks_asset_status.sql`:
+
+- si un actif repasse en `EN_SERVICE` alors qu'une maintenance non rejetee et non terminee reste en attente de validation
+- si la creation d'un ticket maintenance `EN_ATTENTE_VALIDATION` doit aussi declencher le recalcul automatique du statut actif
+
+Quand utiliser `sql/hotfix_2026_04_30_workflow_status_ambiguous_fix.sql`:
+
+- si l'approbation finale CEO d'une maintenance echoue avec `column reference "status" is ambiguous`
+- si des demandes `MAINTENANCE_START` sont deja passees en `FAILED` avec cette erreur apres enregistrement des validations DAF et CEO
+- apres execution, verifier que le script retourne `failed_requests_found`, `maintenance_repaired`, `assets_repaired` et `requests_repaired`; tout ecart indique un ticket a verifier manuellement
 
 ## 3. Rattrapage prod simplifié
 

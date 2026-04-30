@@ -1,6 +1,6 @@
 # Runbook d'exploitation email Trio Asset Management
 
-Date de mise à jour: 2026-03-11
+Date de mise à jour: 2026-04-30
 
 Ce document stabilise l'exploitation des lots 10 à 14:
 
@@ -36,6 +36,8 @@ Rappels:
 - `SUPABASE_SERVICE_ROLE_KEY` est requis par [supabaseAdmin.js](../lib/supabaseAdmin.js)
 - `CRON_SECRET` est requis par [email-dispatch.js](../pages/api/notifications/email-dispatch.js)
 - `APP_BASE_URL` est utilisé pour générer les liens absolus dans les emails
+- `EMAIL_FROM` doit utiliser une adresse du domaine valide et vérifié dans Resend
+- `EMAIL_REPLY_TO`, si configuré, doit être une vraie boîte qui accepte les réponses; sinon le retirer pour laisser Resend utiliser l'expéditeur
 
 ## 2. Scheduler externe
 
@@ -123,6 +125,7 @@ Contrôles attendus:
 - `503 Email configuration missing: ...`: une variable email est absente
 - lignes bloquées en `FAILED`: corriger la cause racine puis relancer depuis `Supervision email`
 - lignes bloquées en `PROCESSING`: vérifier l'absence d'exécution concurrente orpheline et relancer si nécessaire
+- Resend `Bounced`, `Content Rejected`, `550 Personne ne repond a cette adresse`: le serveur destinataire a refuse le message; verifier `EMAIL_FROM`, retirer ou corriger `EMAIL_REPLY_TO`, eviter d'envoyer des details techniques bruts dans le contenu, puis relancer apres correction de la cause applicative
 
 ## 7. Reprise manuelle
 

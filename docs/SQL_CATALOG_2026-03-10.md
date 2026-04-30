@@ -1,6 +1,6 @@
 # Catalogue SQL Trio Asset Management
 
-Date de mise a jour: 2026-04-29
+Date de mise a jour: 2026-04-30
 
 Ce document classe tous les scripts SQL du depot.
 
@@ -68,6 +68,8 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
 | `sql/hotfix_2026_04_27_maintenance_daf_ceo_sequential_approval.sql` | Si les tickets maintenance doivent suivre deux validations sequentielles: conformite DAF puis accord CEO pour demarrer la maintenance |
 | `sql/hotfix_2026_04_29_auto_asset_status_after_maintenance_close.sql` | Si le statut d'un actif doit etre recalcule automatiquement apres cloture maintenance pour revenir a `EN_SERVICE` quand plus aucun incident ou maintenance active ne le bloque |
 | `sql/hotfix_2026_04_29_auto_asset_status_after_incident_close.sql` | Si le statut d'un actif doit aussi etre recalcule automatiquement apres ouverture, resolution ou deplacement d'un incident |
+| `sql/hotfix_2026_04_29_pending_maintenance_blocks_asset_status.sql` | Si une maintenance en attente de validation doit bloquer le retour automatique de l'actif en `EN_SERVICE` |
+| `sql/hotfix_2026_04_30_workflow_status_ambiguous_fix.sql` | Si l'approbation finale CEO d'une maintenance echoue avec `column reference "status" is ambiguous`; le script qualifie les references SQL et repare les demandes `MAINTENANCE_START` deja tombees en `FAILED` avec cette erreur |
 
 ## 4. Regles d'exploitation
 
