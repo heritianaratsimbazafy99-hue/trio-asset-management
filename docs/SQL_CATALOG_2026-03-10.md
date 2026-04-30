@@ -81,7 +81,7 @@ Ces scripts ne font pas partie du chemin standard. Ils servent uniquement a corr
   - `sql/feature_app_notifications.sql`
   - `sql/feature_audit_assignment_history.sql`
   - `sql/step_1_security_integrity_hardening.sql`
-  - un scheduler HTTP externe si l'application est déployée sur Vercel Hobby
+  - le cron Vercel déclaré dans `vercel.json` en Pro, ou un scheduler HTTP externe si l'application est déployée sur Vercel Hobby
 - `sql/feature_notification_preferences.sql` depend explicitement de:
   - `sql/feature_app_notifications.sql`
   - `sql/feature_email_notifications.sql`

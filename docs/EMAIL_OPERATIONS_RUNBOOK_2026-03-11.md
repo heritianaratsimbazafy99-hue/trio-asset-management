@@ -39,7 +39,7 @@ Rappels:
 - `EMAIL_FROM` doit utiliser une adresse du domaine valide et vérifié dans Resend
 - `EMAIL_REPLY_TO`, si configuré, doit être une vraie boîte qui accepte les réponses; sinon le retirer pour laisser Resend utiliser l'expéditeur
 
-## 2. Scheduler externe
+## 2. Scheduler Vercel Pro
 
 Le dispatch email est exposé par:
 
@@ -53,9 +53,11 @@ Authentification acceptée:
 
 Règle d'exploitation:
 
-- sur Vercel Hobby, ne pas déclarer de `crons` dans `vercel.json`
-- utiliser un scheduler HTTP externe
-- cadence recommandée: toutes les 5 minutes en charge nominale
+- le projet utilise Vercel Pro, donc le cron est déclaré dans `vercel.json`
+- cadence active: toutes les 5 minutes via `*/5 * * * *`
+- Vercel Cron appelle uniquement le déploiement production et envoie `Authorization: Bearer <CRON_SECRET>` si `CRON_SECRET` est configuré côté Vercel
+- après activation Vercel Cron, désactiver le cron équivalent dans `cron-job.org` pour éviter un double déclenchement
+- si le projet repasse sur Vercel Hobby, retirer les `crons` de `vercel.json` et revenir à un scheduler HTTP externe
 
 ## 3. Déclenchement manuel
 
